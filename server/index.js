@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const { checkToken } = require("./auth/token_validation");
 
 const multer = require("multer");
 
@@ -27,17 +28,12 @@ app.use(cors("*"));
 //     cb(null, `${Date.now()}.${extension}`);
 //   },
 // });
-
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    console.log(req.body.folder);
-    if (req.body.folder === "images") {
-      cb(null, path.join(null, "public/images"));
-    } else if (req.body.folder === "categories") {
-      cb(null, path.join(null, "public/categories"));
-    } else {
-      cb(new Error("Invalid folder specified"));
-    }
+  destination: function (req, file, cb) {
+    console.log(file.fieldname);
+    if (file.fieldname === "image_category") {
+      cb(null, "public/categories");
+    } else cb(null, "public/images");
   },
   filename: (req, file, cb) => {
     const originalName = file.originalname;
@@ -45,7 +41,6 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}.${extension}`);
   },
 });
-
 const upload = multer({
   storage: storage,
 });
@@ -73,15 +68,15 @@ app.post(
   upload.fields([{ name: "image", maxCount: 1 }, { name: "images" }]),
   (req, res) => {
     const image = req.files?.image?.[0]?.filename || null;
-    const category = req.body.category;
     const status = req.body.status;
+    const genre = req.body.genre;
     const size_shoes = req.body.size_shoes;
     const meta_image = req.body.meta_image;
     const nom = req.body.nom;
     const prix = req.body.prix;
     let prix_promo = req.body.prix_promo;
-    const qty = req.body.qty;
-
+    const qty = req.body.size_quantity;
+    let categories = req.body.categories;
     // Convert prix_promo to null if it's an empty string
     prix_promo = prix_promo === "" ? 0 : prix_promo;
 
@@ -91,13 +86,25 @@ app.post(
       .map((item) => item.filename);
     const firstTableString = JSON.stringify(images);
 
+    // Log the entire request body to inspect it
+    console.log("Request Body:", req.body);
+
+    // Check if categories is an array
+    if (!Array.isArray(categories)) {
+      try {
+        categories = JSON.parse(categories);
+      } catch (e) {
+        console.log("Failed to parse categories:", categories);
+        categories = [];
+      }
+    }
+
     db.query(
-      `insert into produit(name,price,price_promo,category,status,description,nemuro_shoes,image,meta_image,out_stock,hiden,images,meta_images,qty) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `insert into produit(name,price,price_promo,status,description,nemuro_shoes,image,meta_image,out_stock,hiden,images,meta_images,qty,genre) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         nom,
         prix,
         prix_promo,
-        category,
         status,
         description,
         size_shoes,
@@ -108,13 +115,31 @@ app.post(
         firstTableString,
         firstTableString,
         qty,
+        genre,
       ],
       (err, result, fields) => {
         if (err) {
           console.log(err);
           res.status(500).send(err); // Send error response
         } else {
-          res.send(result);
+          const PrID = result.insertId;
+          if (categories.length > 0) {
+            console.log("id", PrID, "categories", categories[0].id);
+            for (i = 0; i < req.body.categories.length - 1; i++) {
+              db.query(
+                "INSERT INTO  produit_categorie(produit_id,categorie_id) VALUES (?,?)",
+                [PrID, categories[i]?.id],
+                (err, result) => {
+                  if (err) {
+                    console.log(err);
+                  }
+                }
+              );
+            }
+            res.send("Values Inserted");
+          } else {
+            console.log("id", PrID, "categories are empty or undefined");
+          }
         }
       }
     );
@@ -231,19 +256,36 @@ app.put("/api/in_stock", (req, res) => {
 });
 //Alls Products By Priority and Not Hiden
 app.get("/api/products", (req, res) => {
-  db.query("SELECT * FROM produit where   hiden = '0'", (err, result) => {
-    if (err) {
-      console.log(err);
-    } else {
-      res.send(result);
+  db.query(
+    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE  produit.hiden = '0' GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    (err, result) => {
+      //SELECT
+      //     product.id AS product_id,
+      //     product.name_prod AS product_name,
+      //     product.price,
+      //     product.quantity,
+      //     GROUP_CONCAT(category.name ORDER BY category.name ASC SEPARATOR ', ') AS category_names
+      // FROM
+      //     product
+      // JOIN
+      //     product_category ON product.id = product_category.product_id
+      // JOIN
+      //     category ON product_category.category_id = category.id
+      // GROUP BY
+      //     product.id, product.name_prod, product.price, product.quantity;
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+      }
     }
-  });
+  );
 });
 
 //Alls Products By Priority and Not Hiden
 app.get("/api/interface/products", (req, res) => {
   db.query(
-    "SELECT * FROM produit where out_stock = '1' and hiden = '0'",
+    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE  produit.hiden = '0' and produit.out_stock = '1' GROUP BY produit.id, produit.name, produit.price, produit.qty;",
     (err, result) => {
       if (err) {
         console.log(err);
@@ -253,6 +295,22 @@ app.get("/api/interface/products", (req, res) => {
     }
   );
 });
+
+app.get("/api/interface/products/:id", (req, res) => {
+  const id = req.params.id;
+  db.query(
+    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE  produit.hiden = '0' and produit.out_stock = '1' and produit.id = ? GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    [id],
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+      }
+    }
+  );
+});
+
 //delete a product
 app.post("/api/product/:id", (req, res) => {
   const id = req.params.id;
@@ -394,14 +452,25 @@ app.get("/api/hiden_in_stock", (req, res) => {
     }
   );
 });
-
+//categories Crud:
+app.get("/api/categories", (req, res) => {
+  db.query("SELECT * FROM categorie ", (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.send(result);
+    }
+  });
+});
 app.post(
   "/api/create-category",
-  upload.fields([{ name: "image", maxCount: 1 }]),
+  upload.single("image_category"),
   (req, res) => {
-    const image = req.files?.image?.[0]?.filename || null;
-    console.log(req.files.image);
-    const meta_image = req.body.meta_image;
+    const image = req.file?.filename || null;
+    console.log(req.body);
+    console.log(image);
+
+    const meta_image = req.body.meta_image_category;
     const name_category = req.body.name_category;
 
     db.query(

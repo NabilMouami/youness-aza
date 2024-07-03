@@ -18,10 +18,17 @@ import {
   RiCloseLargeFill,
 } from "react-icons/ri";
 import { Tooltip } from "@mui/material";
+import SelectOpt from "react-select";
+
 import { detailsProduct } from "../../slices/detailsProduct";
 function ListProduits() {
   const [listProds, setListProds] = useState([]);
+  console.log(listProds);
   const [listFiltred, setListFiltred] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectVille, setSelectVille] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState([]);
+
   const [disable_button, setDisable] = useState(true);
   const [category, setSelectCategory] = useState("Tous");
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
@@ -140,22 +147,80 @@ function ListProduits() {
     dispatch(detailsProduct(dts));
     navigate("/app/details-produit/" + dts.id);
   };
-  //Filters
-  const filterCategory = (e) => {
-    if (listProds.length > 0) {
-      setSelectCategory(e.target.value);
-      if (listProds.length > 0) {
-        const newFilter = listProds.filter(
-          (bon) => bon.category === e.target.value
-        );
-        setListFiltred(newFilter);
-        if (e.target.value === "Tous") {
-          setListFiltred(listProds);
-          return;
+
+  useEffect(() => {
+    axios
+      .get(`${config_url}/api/categories`)
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setCategories(res.data);
+        } else {
+          console.error(
+            "Invalid data structure received for categories:",
+            res.data
+          );
         }
-      }
+      })
+      .catch((error) => {
+        console.error("Error fetching categories:", error);
+      });
+  }, []);
+
+  //Filters
+
+  const selOptions = [];
+  const ids = categories?.map((o) => o.name);
+  const filtered = categories?.filter(
+    ({ name }, index) => !ids?.includes(name, index + 1)
+  );
+
+  for (let i = 0; i < filtered.length; i++) {
+    if (filtered.length > 0) {
+      selOptions.push({
+        value: filtered[i].name,
+        label: filtered[i].name,
+        id: filtered[i].id,
+      });
     }
+  }
+
+  useEffect(() => {
+    filterData();
+  }, [selectedCategories]);
+
+  const filterData = () => {
+    let filtered = listProds;
+
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter((item) =>
+        selectedCategories.every((city) => city.value !== item.category_names)
+      );
+    }
+
+    setListFiltred(filtered);
   };
+  const handle = (e) => {
+    console.log(e);
+    const value = e.map((option) => option.label);
+    setSelectVille(value);
+    setSelectedCategories(e);
+  };
+  const handleRemoveOption = (removedValue) => {};
+
+  const customMultiValue = (props) => (
+    <div className="flex gap-2 ml-2 font-bold">
+      <div>{props.data.label}</div>
+      <button
+        onClick={(e) => {
+          props.removeProps.onClick();
+          handleRemoveOption(props.data.label);
+        }}
+        className="w-8 h-8 rounded-full text-black p-1 bg-red-400"
+      >
+        X
+      </button>
+    </div>
+  );
   const columns = [
     {
       field: "name",
@@ -165,7 +230,7 @@ function ListProduits() {
       width: 200,
     },
     {
-      field: "category",
+      field: "category_names",
       headerName: "Category:",
       headerClassName: "super-app-theme--cell",
 
@@ -301,23 +366,15 @@ function ListProduits() {
             Ajoute Categorie
           </Button>
         </Link>
-        <div className="w-[180px] bg-white p-4 mt-6 rounded-xl flex items-center justify-between">
-          <div>
-            <label className="ml-5 mb-2 block text-lg font-bold text-black">
-              Category:
-            </label>
-
-            <select
-              className="ml-5 mb-3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-50 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              value={category}
-              onChange={(e) => filterCategory(e)}
-            >
-              <option value="Tous">Tous</option>
-              <option value="air-force-1">Air Force 1</option>
-              <option value="air-jordan">Air Jordan</option>
-              <option value="dunk">Dunk</option>
-            </select>
-          </div>
+        <div className="flex flex-col items-center">
+          <span className="text-black font-bold">Categorie :</span>
+          <SelectOpt
+            className="Options"
+            options={selOptions}
+            isMulti
+            onChange={handle}
+            components={{ MultiValue: customMultiValue }}
+          />
         </div>
         <h1>List Produits:</h1>
         {!disable_button && (

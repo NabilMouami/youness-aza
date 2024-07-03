@@ -71,7 +71,7 @@ function DetailsProd() {
             <div className="text-xl font-bold">
               {" "}
               <span className="text-black semi-bold">Category:</span>{" "}
-              {Col.category}
+              {Col.category_names}
             </div>
             <div className="text-xl font-bold">
               {" "}

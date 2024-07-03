@@ -387,3 +387,9 @@ select {
   display: flex;
   align-items: center;
 }
+.Options {
+  border-radius: 12px;
+  color: #383838;
+  width: 500px;
+  margin-top: 15px;
+}

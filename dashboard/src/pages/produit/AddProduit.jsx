@@ -6,6 +6,8 @@ import axios from "axios";
 import FormControl from "@mui/material/FormControl";
 import Select from "@mui/material/Select";
 import { toast } from "react-toastify";
+import SelectOpt from "react-select";
+
 import {
   MdCloudUpload,
   MdDelete,
@@ -15,20 +17,27 @@ import {
 } from "react-icons/md";
 import { AiFillFileImage } from "react-icons/ai";
 import { RiCloseLargeFill } from "react-icons/ri";
+
 function AddProduit() {
-  const [category, setSelectCategory] = useState("air-force-1");
+  const [genre, setSelectGenre] = useState("homme");
+  const [categories, setCategories] = useState([]);
+  console.log(categories);
   const [status, setSelectStatus] = useState("new");
   const [qty, setQty] = useState(0);
+  const [quantity, setQuantity] = useState("");
   const [nom, setNom] = useState("");
   const [prix, setPrix] = useState("");
   const [prix_promo, setPrixPromo] = useState(0);
   const [items, setItems] = useState([]); // Array to store list items
+  console.log("items:", items);
   const valueStrings = items.map((item) => `"${item.value}"`);
+  const quantityStrings = items.map((item) => `"${item.quantity}"`);
 
+  console.log(quantityStrings);
   // Join the strings with commas and enclose the entire array in brackets
   const size_shoes = `[ ${valueStrings.join(",")} ]`;
-
-  console.log(size_shoes); // Output: [ "34","45","43" ]
+  const size_quantity = `[ ${quantityStrings.join(",")} ]`;
+  console.log(size_quantity);
   const [description, setDescription] = useState("");
 
   const [image, setImage] = useState("");
@@ -37,6 +46,9 @@ function AddProduit() {
 
   const [selectedFiles, setSelectedFiles] = useState([]);
 
+  const [selectVille, setSelectVille] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  console.log(selectedCategories);
   const [loading, setLoading] = useState(false);
 
   const handleUpload = async (e) => {
@@ -49,10 +61,12 @@ function AddProduit() {
     formdata.append("description", description);
     formdata.append("prix", prix);
     formdata.append("prix_promo", prix_promo);
-    formdata.append("category", category);
+    formdata.append("categories", JSON.stringify(selectedCategories));
     formdata.append("status", status);
+    formdata.append("genre", genre);
     formdata.append("qty", qty);
     formdata.append("size_shoes", size_shoes);
+    formdata.append("size_quantity", size_quantity);
     formdata.append("meta_image", meta_image);
     selectedFiles.forEach((file, index) => {
       if (file) {
@@ -106,13 +120,14 @@ function AddProduit() {
     newItems[index].value = event.target.value;
     setItems(newItems);
   };
-  // Select chooice Category: Plat,Drinks,Dissert
-  const handleSelectCategory = (e) => {
-    setSelectCategory(e.target.value);
-  };
+
   const handleSelectStatus = (e) => {
     setSelectStatus(e.target.value);
   };
+  const handleSelectGenre = (e) => {
+    setSelectGenre(e.target.value);
+  };
+
   // Add List Of Numero Shoes (Sizes)
   const addListItem = () => {
     setItems((prevItems) => [...prevItems, { id: Math.random(), value: "" }]);
@@ -130,6 +145,62 @@ function AddProduit() {
     setItems(newItems);
   };
 
+  useEffect(() => {
+    axios
+      .get(`${config_url}/api/categories`)
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setCategories(res.data);
+        } else {
+          console.error(
+            "Invalid data structure received for categories:",
+            res.data
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching categories:", error);
+      });
+  }, []);
+
+  const selOptions = [];
+  const ids = categories?.map((o) => o.name);
+  const filtered = categories?.filter(
+    ({ name }, index) => !ids?.includes(name, index + 1)
+  );
+
+  for (let i = 0; i < filtered.length; i++) {
+    if (filtered.length > 0) {
+      selOptions.push({
+        value: filtered[i].name,
+        label: filtered[i].name,
+        id: filtered[i].id,
+      });
+    }
+  }
+
+  const handle = (e) => {
+    console.log(e);
+    const value = e.map((option) => option.label);
+    setSelectVille(value);
+    setSelectedCategories(e);
+  };
+  const handleRemoveOption = (removedValue) => {};
+
+  const customMultiValue = (props) => (
+    <div className="flex gap-2 ml-2 font-bold">
+      <div>{props.data.label}</div>
+      <button
+        onClick={(e) => {
+          props.removeProps.onClick();
+          handleRemoveOption(props.data.label);
+        }}
+        className="w-8 h-8 rounded-full text-black p-1 bg-red-400"
+      >
+        X
+      </button>
+    </div>
+  );
   return (
     <Fragment>
       <div className="page__main">
@@ -181,37 +252,37 @@ function AddProduit() {
                 placeholder="Prix Promo:"
               />
             </div>
-            <div className="w-90 px-3 mb-6 md:mb-0">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                Quantity Available:
-              </label>
-              <input
-                className="appearance-none block w-full bg-white text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none  focus:border-sky-500"
-                type="number"
-                onChange={(e) => setQty(e.target.value)}
-                placeholder="Number Piece Of Shoes:"
+
+            <div className="flex flex-col items-center">
+              <span className="text-black font-bold">Categorie :</span>
+              <SelectOpt
+                className="Options"
+                options={selOptions}
+                isMulti
+                onChange={handle}
+                components={{ MultiValue: customMultiValue }}
               />
             </div>
-            <Box sx={{ ml: 2, minWidth: 220 }}>
-              <FormControl sx={{ minWidth: 220 }}>
-                <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-                  Categorie:
-                </label>{" "}
-                <Select value={category} onChange={handleSelectCategory}>
-                  <MenuItem value="air-force-1">Air Force 1</MenuItem>
-                  <MenuItem value="air-jordan">Air Jordan</MenuItem>
-                  <MenuItem value="dunk">Dunk</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
             <Box sx={{ ml: 2, minWidth: 220 }}>
               <FormControl sx={{ minWidth: 220 }}>
                 <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
                   Status:
                 </label>{" "}
                 <Select value={status} onChange={handleSelectStatus}>
-                  <MenuItem value="new">New</MenuItem>
-                  <MenuItem value="old">Old</MenuItem>
+                  <MenuItem value="new">Online</MenuItem>
+                  <MenuItem value="old">Draft</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <Box sx={{ ml: 2, minWidth: 220 }}>
+              <FormControl sx={{ minWidth: 220 }}>
+                <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
+                  Genre:
+                </label>{" "}
+                <Select value={genre} onChange={handleSelectGenre}>
+                  <MenuItem value="homme">Homme</MenuItem>
+                  <MenuItem value="femme">Femme</MenuItem>
+                  <MenuItem value="enfant">Enfant</MenuItem>
                 </Select>
               </FormControl>
             </Box>

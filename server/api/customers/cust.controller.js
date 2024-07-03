@@ -9,6 +9,33 @@ const {
 } = require("./cust.service");
 const { hashSync, genSaltSync, compareSync } = require("bcrypt");
 const { sign } = require("jsonwebtoken");
+const express = require("express");
+const http = require("http");
+const WebSocket = require("ws");
+
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
+
+wss.on("connection", (ws) => {
+  console.log("Client connected");
+
+  ws.on("message", (message) => {
+    console.log(`Received: ${message}`);
+  });
+
+  ws.on("close", () => {
+    console.log("Client disconnected");
+  });
+});
+
+function broadcast(data) {
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(data));
+    }
+  });
+}
 
 module.exports = {
   createCust: (req, res) => {
@@ -47,6 +74,8 @@ module.exports = {
         const jsontoken = sign({ result: results }, "customeryazasneackers", {
           expiresIn: "8h",
         });
+        broadcast({ event: "USER_REGISTERED", body });
+
         return res.json({
           results: results,
           token: jsontoken,

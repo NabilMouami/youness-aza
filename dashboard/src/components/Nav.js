@@ -1,14 +1,37 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
 import "./Nav.modules.css";
 
 const Nav = ({ children }) => {
   const [show, setShow] = useState(true);
+  const [notifications, setNotifications] = useState([]);
+
   const navigate = useNavigate();
 
   const showSideBar = () => {
     setShow(!show);
   };
+  useEffect(() => {
+    const ws = new WebSocket("ws://localhost:3000");
+
+    ws.onopen = () => {
+      console.log("Connected to WebSocket server");
+    };
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setNotifications((prev) => [...prev, data]);
+    };
+
+    ws.onclose = () => {
+      console.log("Disconnected from WebSocket server");
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
   const Logout = async () => {
     await localStorage.removeItem("token");
     await navigate("/");
