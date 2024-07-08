@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
+const nodemailer = require("nodemailer");
 const { checkToken } = require("./auth/token_validation");
 
 const multer = require("multer");
@@ -14,6 +15,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 const userRouter = require("./api/users/user.router");
+const groupRouter = require("./api/group/group.router");
+const orderRouter = require("./api/orders/order.router");
 const customerRouter = require("./api/customers/cust.router");
 
 app.use(cors("*"));
@@ -47,22 +50,46 @@ const upload = multer({
 
 const port = process.env.PORT || 5000;
 app.use("/api/users", userRouter);
+app.use("/api/groupes", groupRouter);
 app.use("/api/customers", customerRouter);
+app.use("/api/orders", orderRouter);
 
-app.post(
-  "/api/product",
-  upload.fields([
-    { name: "image", maxCount: 1 },
-    { name: "images", maxCount: 10 },
-  ]),
-  (req, res) => {
-    console.log(req.body); // Other fields
-    console.log(req.files.image); // Uploaded files
-    console.log(req.files.images); // Uploaded files
+// Endpoint to handle order creation
+app.post("/create-order", (req, res) => {
+  const orderData = req.body;
 
-    res.send("Files uploaded successfully");
-  }
-);
+  // Send email
+  sendOrderEmail(orderData)
+    .then(() => {
+      res.status(200).send("Order created and email sent successfully!");
+    })
+    .catch((error) => {
+      console.error(error);
+      res.status(500).send("Error creating order or sending email.");
+    });
+});
+
+async function sendOrderEmail(orderData) {
+  console.log("hamiiiiid");
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: "nabilmouami353@gmail.com", // Replace with your email
+      pass: "ujrj njvo atqw tsml", // Replace with your email password
+    },
+  });
+
+  const mailOptions = {
+    from: "nabilmouami353@gmail.com", // Replace with your email
+    to: "bill.mou33@gmail.com", // Replace with recipient email
+    subject: "New Order Created",
+    text: `New order details:\n\n${JSON.stringify(orderData, null, 2)}`,
+  };
+
+  await transporter.sendMail(mailOptions);
+}
 app.post(
   "/api/create-prod",
   upload.fields([{ name: "image", maxCount: 1 }, { name: "images" }]),

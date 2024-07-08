@@ -44,22 +44,35 @@ const Nav = ({ children }) => {
       key: 1,
     },
     {
+      url: "/app/list-orders",
+      i_class: "bx bx-cart-add",
+      link_title: "Orders",
+      key: 1,
+    },
+    {
       url: "/app/categories",
       i_class: "bx bxl-deezer",
       link_title: "Categoies",
       key: 2,
     },
     {
+      url: "/app/ajoute-produit-to-group",
+      i_class: "bx bx-link",
+      link_title: "Relation Products",
+      key: 3,
+    },
+
+    {
       url: "/app/hiden-produits",
       i_class: "bx bxs-low-vision",
       link_title: "Hiden Produits",
-      key: 3,
+      key: 4,
     },
     {
       url: "utilisateurs",
       i_class: "bx bxs-user ",
       link_title: "Users",
-      key: 4,
+      key: 5,
     },
   ];
 

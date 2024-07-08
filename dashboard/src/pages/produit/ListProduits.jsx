@@ -287,7 +287,7 @@ function ListProduits() {
         return (
           <div
             style={{
-              backgroundImage: `url(http://localhost:5000/images/${params.row.image})`,
+              backgroundImage: `url(${config_url}/images/${params.row.image})`,
               width: "50px",
               height: "50px",
               backgroundPosition: "center",

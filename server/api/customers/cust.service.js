@@ -41,7 +41,7 @@ module.exports = {
     );
   },
   getCustomers: (callBack) => {
-    db.query(`select * from customer`, [], (error, results, fields) => {
+    db.query(`select * from customer`, (error, results, fields) => {
       if (error) {
         callBack(error);
       }

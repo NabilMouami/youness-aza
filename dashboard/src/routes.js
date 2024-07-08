@@ -12,6 +12,9 @@ import UpdProduit from "./pages/produit/UpdProduit";
 import Login from "./pages/Login";
 import Page404 from "./pages/page404";
 import AddCategory from "./pages/category/AddCategory";
+import AddProdGroup from "./pages/produitgroup/AddProdGroup";
+import AddGroupe from "./pages/produitgroup/AddGroupe";
+import ListOrders from "./pages/order/ListOrders";
 export default function Router() {
   return useRoutes([
     {
@@ -25,6 +28,9 @@ export default function Router() {
         { path: "changer-produit/:id", element: <UpdProduit /> },
         { path: "details-produit/:id", element: <DetailsProd /> },
         { path: "ajoute-categorie", element: <AddCategory /> },
+        { path: "ajoute-produit-to-group", element: <AddProdGroup /> },
+        { path: "ajoute-groupe", element: <AddGroupe /> },
+        { path: "list-orders", element: <ListOrders /> },
       ],
     },
     {
