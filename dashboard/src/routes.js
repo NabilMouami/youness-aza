@@ -15,6 +15,8 @@ import AddCategory from "./pages/category/AddCategory";
 import AddProdGroup from "./pages/produitgroup/AddProdGroup";
 import AddGroupe from "./pages/produitgroup/AddGroupe";
 import ListOrders from "./pages/order/ListOrders";
+import DetailOrder from "./pages/order/DetailOrder";
+import ListCategories from "./pages/category/ListCategories";
 export default function Router() {
   return useRoutes([
     {
@@ -28,9 +30,12 @@ export default function Router() {
         { path: "changer-produit/:id", element: <UpdProduit /> },
         { path: "details-produit/:id", element: <DetailsProd /> },
         { path: "ajoute-categorie", element: <AddCategory /> },
+        { path: "list-categories", element: <ListCategories /> },
+
         { path: "ajoute-produit-to-group", element: <AddProdGroup /> },
         { path: "ajoute-groupe", element: <AddGroupe /> },
         { path: "list-orders", element: <ListOrders /> },
+        { path: "details-order/:id", element: <DetailOrder /> },
       ],
     },
     {

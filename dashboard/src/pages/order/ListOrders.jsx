@@ -6,6 +6,8 @@ import { toast } from "react-toastify";
 import { config_url } from "../../config";
 import axios from "axios";
 import Box from "@mui/material/Box";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import Swal from "sweetalert2";
 import {
@@ -33,7 +35,10 @@ function ListOrders() {
       await setListFiltred(res.data);
     });
   }, []);
-
+  const detailsProd = (dts) => {
+    dispatch(detailsProduct(dts));
+    navigate("/app/details-order/" + dts.id);
+  };
   const columns = [
     {
       field: "nom_client",
@@ -54,21 +59,36 @@ function ListOrders() {
       headerName: "Status:",
       headerClassName: "super-app-theme--cell",
 
-      width: 80,
+      width: 140,
+      renderCell: (params) => {
+        return (
+          <>
+            <div className="flex items-center mt-2">
+              <Stack direction="row" spacing={1}>
+                <Chip
+                  label={params.row.status}
+                  color="error"
+                  variant="outlined"
+                />
+              </Stack>
+            </div>
+          </>
+        );
+      },
     },
     {
-      field: "total_price",
+      field: "total_price_sum",
       headerName: "Total Price:",
       headerClassName: "super-app-theme--cell",
 
       width: 100,
     },
     {
-      field: "product_name",
-      headerName: "Product",
+      field: "sum_qty",
+      headerName: "Items:",
       headerClassName: "super-app-theme--cell",
 
-      width: 160,
+      width: 100,
     },
     {
       field: "date_order",
@@ -76,6 +96,27 @@ function ListOrders() {
       headerClassName: "super-app-theme--cell",
 
       width: 160,
+    },
+    {
+      field: "modification",
+      headerName: "",
+      width: 220,
+      renderCell: (params) => {
+        return (
+          <>
+            <div className="flex items-center">
+              <Tooltip title="Informations About Order" placement="top">
+                <div className="mt-2">
+                  <RiAddCircleFill
+                    className="collabListEdit"
+                    onClick={() => detailsProd(params.row)}
+                  />
+                </div>
+              </Tooltip>
+            </div>
+          </>
+        );
+      },
     },
   ];
   return (
@@ -104,7 +145,7 @@ function ListOrders() {
           <DataGrid
             rows={listFiltred}
             columns={columns}
-            getRowId={(row) => row.id}
+            getRowId={(row) => row.date_order}
             checkboxSelection
           />
         </Box>

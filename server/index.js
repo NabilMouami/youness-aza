@@ -312,7 +312,20 @@ app.get("/api/products", (req, res) => {
 //Alls Products By Priority and Not Hiden
 app.get("/api/interface/products", (req, res) => {
   db.query(
-    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE  produit.hiden = '0' and produit.out_stock = '1' GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id JOIN product_group ON produit.id=product_group.product_id WHERE  produit.hiden = '0' and produit.out_stock = '1' GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+      }
+    }
+  );
+});
+//Alls Products By Priority and Not Hiden AND Promotion (collection/on-sale page in Next js)
+app.get("/api/products/promotion", (req, res) => {
+  db.query(
+    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE  produit.hiden = '0'  AND produit.price_promo != 0  GROUP BY produit.id, produit.name, produit.price, produit.qty;",
     (err, result) => {
       if (err) {
         console.log(err);
@@ -337,7 +350,37 @@ app.get("/api/interface/products/:id", (req, res) => {
     }
   );
 });
-
+//Alls Products By Priority and Not Hiden
+app.get("/api/product_group/:id", (req, res) => {
+  const prod_id = req.params.id;
+  db.query(
+    `SELECT produit.id AS id, produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  
+   FROM produit 
+   JOIN produit_categorie ON produit.id = produit_categorie.produit_id 
+   JOIN categorie ON produit_categorie.categorie_id = categorie.id 
+   JOIN product_group ON produit.id = product_group.product_id 
+   WHERE produit.hiden = '0' AND produit.out_stock = '1' 
+     AND produit.id IN (
+       SELECT product_id
+       FROM product_group
+       WHERE group_id = (
+         SELECT group_id
+         FROM product_group
+         WHERE product_id = ?
+       )
+       AND product_id <> ?
+     )
+   GROUP BY produit.id, produit.name, produit.price, produit.qty;`,
+    [prod_id, prod_id],
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+      }
+    }
+  );
+});
 //delete a product
 app.post("/api/product/:id", (req, res) => {
   const id = req.params.id;

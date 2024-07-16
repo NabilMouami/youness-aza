@@ -26,9 +26,9 @@ function AddProdGroup() {
   const [listFiltred, setListFiltred] = useState([]);
   const [disable_button, setDisable] = useState(true);
   const [groupes, setGroupes] = useState([]);
-  console.log(groupes);
+  const [group_id, setGroupId] = useState("");
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
-
+  console.log(rowSelectionModel);
   useEffect(() => {
     axios
       .get(`${config_url}/api/products`, {
@@ -74,9 +74,21 @@ function AddProdGroup() {
   }
   const handle = (e) => {
     console.log(e.id);
+    setGroupId(e.id);
   };
 
-  const ajouteProductCategory = () => {};
+  const ajouteProductCategory = () => {
+    axios
+      .post(`${config_url}/api/groupes/product_group`, {
+        rowSelectionModel,
+        group_id,
+      })
+      .then(() => {
+        toast.success("Ajoute Produit Au Groupe !!", {
+          position: "top-right",
+        });
+      });
+  };
   const columns = [
     {
       field: "name",
@@ -166,7 +178,9 @@ function AddProdGroup() {
         {!disable_button && (
           <div className="flex gap-4 mb-8">
             <div className="flex flex-col items-center">
-              <span className="text-black font-bold">Groupes :</span>
+              <span className="text-black font-bold">
+                Affecter Aux Groupes :
+              </span>
               <SelectOpt
                 className="Options"
                 options={selOptions}
@@ -174,8 +188,8 @@ function AddProdGroup() {
               />
             </div>
             <button
-              disabled={disable_button}
               className="bg-red-500 hover:bg-red-700 text-white font-bold rounded-2xl"
+              onClick={() => ajouteProductCategory()}
             >
               Affecter au groupe
             </button>

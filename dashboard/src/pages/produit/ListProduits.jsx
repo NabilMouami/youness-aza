@@ -356,16 +356,18 @@ function ListProduits() {
   return (
     <Fragment>
       <div className="page__main">
-        <Link to="/app/ajoute-produit">
-          <Button variant="outlined" startIcon={<RiAddCircleFill />}>
-            Ajoute Produit
-          </Button>
-        </Link>
-        <Link to="/app/ajoute-categorie">
-          <Button variant="outlined" startIcon={<RiAddCircleFill />}>
-            Ajoute Categorie
-          </Button>
-        </Link>
+        <div className="flex items-center justify-center gap-10 mb-10">
+          <Link to="/app/ajoute-produit">
+            <Button variant="outlined" startIcon={<RiAddCircleFill />}>
+              Ajoute Produit
+            </Button>
+          </Link>
+          <Link to="/app/ajoute-categorie">
+            <Button variant="outlined" startIcon={<RiAddCircleFill />}>
+              Ajoute Categorie
+            </Button>
+          </Link>
+        </div>
         <div className="flex flex-col items-center">
           <span className="text-black font-bold">Categorie :</span>
           <SelectOpt

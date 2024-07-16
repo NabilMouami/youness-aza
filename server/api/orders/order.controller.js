@@ -2,6 +2,7 @@ const {
   createOrder,
   getOrders,
   getOrdersByCustomer,
+  getOrdersByDateOrder,
 } = require("./order.service");
 
 module.exports = {
@@ -43,10 +44,23 @@ module.exports = {
           message: "Record not Found",
         });
       }
-      return res.json({
-        success: 1,
-        data: results,
-      });
+      return res.status(200).json(results);
+    });
+  },
+  getOrdersByDtOrd: (req, res) => {
+    const id = req.params.date_order;
+    getOrdersByDateOrder(id, (err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      if (!results) {
+        return res.json({
+          success: 0,
+          message: "Record not Found",
+        });
+      }
+      return res.status(200).json(results);
     });
   },
 };

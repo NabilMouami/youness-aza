@@ -1,10 +1,16 @@
-import React, { useState, Fragment } from "react";
-import { useSelector } from "react-redux";
+import React, { useState, Fragment, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { config_url } from "../../config";
-
+import axios from "axios";
 function DetailsProd() {
   const Detail = useSelector((state) => state.Load);
   const { Col } = Detail;
+
+  const dispatch = useDispatch();
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  const [listProdsGroup, setListProdsGroup] = useState([]);
+  console.log(listProdsGroup);
   const myArray = JSON.parse(Col.nemuro_shoes);
 
   const imagesArray = JSON.parse(Col.images) || [];
@@ -25,6 +31,11 @@ function DetailsProd() {
       </button>
     );
   };
+  useEffect(() => {
+    axios.get(`${config_url}/api/product_group/${Col.id}`).then(async (res) => {
+      await setListProdsGroup(res.data);
+    });
+  }, [Col.Detail]);
   return (
     <Fragment>
       {" "}
@@ -102,6 +113,29 @@ function DetailsProd() {
               </span>
             )}
           </p>
+          <h3>Related Product:</h3>
+          <div className="flex space-x-2">
+            {listProdsGroup?.map((product) => (
+              <div
+                key={product.id}
+                onClick={() => setSelectedProduct(product.id)}
+              >
+                <div
+                  className={`border ${
+                    selectedProduct === product.id
+                      ? "border-black"
+                      : "border-transparent"
+                  } rounded-md p-2`}
+                >
+                  <img
+                    src={`${config_url}/images/${product.image}`}
+                    alt={product.meta_image}
+                    className="w-12 h-12 object-cover rounded-md"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </Fragment>

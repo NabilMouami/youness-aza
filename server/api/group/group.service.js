@@ -15,6 +15,23 @@ module.exports = {
       }
     );
   },
+  AffectProuductsToGroupe: (data, callBack) => {
+    console.log(data);
+    for (let i = 0; i < data.rowSelectionModel.length; i++) {
+      db.query(
+        `insert into product_group(product_id,group_id) 
+                values(?,?)`,
+        [data.rowSelectionModel[i], data.group_id],
+
+        (insertError, insertResults, insertFields) => {
+          if (insertError) {
+            return callBack(insertError);
+          }
+        }
+      );
+    }
+    callBack(null, { message: "Insertions completed successfully" });
+  },
   getGroupes: (callBack) => {
     db.query("SELECT id,name FROM groupes", [], (error, results, fields) => {
       if (error) {

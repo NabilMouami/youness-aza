@@ -24,7 +24,7 @@ import { ProductsModule } from './produit/produit.module';
       username: 'root',
       password: '123456789',
       synchronize: true,
-      database: 'azasnikrs',
+      database: 'yazasnikrs',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
     }),
     UserModule,
