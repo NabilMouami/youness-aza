@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const fs = require("fs");
+const handlebars = require("handlebars");
 const path = require("path");
 const nodemailer = require("nodemailer");
 const { checkToken } = require("./auth/token_validation");
@@ -90,6 +91,52 @@ async function sendOrderEmail(orderData) {
 
   await transporter.sendMail(mailOptions);
 }
+
+app.post("/send-order-email", (req, res) => {
+  const { customerName, orderId, totalPrice } = req.body;
+  console.log("hamiiiiid");
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    auth: {
+      user: "nabilmouami353@gmail.com", // Replace with your email
+      pass: "ujrj njvo atqw tsml", // Replace with your email password
+    },
+  });
+  const templatePath = path.join(
+    __dirname,
+    "emailTemplate",
+    "orderEmailTemplate.hbs"
+  );
+
+  fs.readFile(templatePath, "utf8", (err, data) => {
+    if (err) {
+      return res.status(500).send({ message: "Error reading template file" });
+    }
+
+    // Compile the template with Handlebars
+    const template = handlebars.compile(data);
+    const html = template({ customerName, orderId, totalPrice });
+
+    // Set up email options
+    const mailOptions = {
+      from: "nabilmouami353@gmail.com", // Replace with your email
+      to: "bill.mou33@gmail.com", // Replace with recipient email
+      subject: "New Order Created",
+      html: html,
+    };
+
+    // Send the email
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        return res.status(500).send({ message: "Error sending email", error });
+      }
+      res.status(200).send({ message: "Email sent successfully", info });
+    });
+  });
+});
+
 app.post(
   "/api/create-prod",
   upload.fields([{ name: "image", maxCount: 1 }, { name: "images" }]),

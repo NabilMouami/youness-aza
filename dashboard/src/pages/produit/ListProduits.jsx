@@ -208,14 +208,14 @@ function ListProduits() {
   const handleRemoveOption = (removedValue) => {};
 
   const customMultiValue = (props) => (
-    <div className="flex gap-2 ml-2 font-bold">
+    <div className="flex gap-2 ml-2 font-bold bg-gray-300 p-1 rounded-full text-xl">
       <div>{props.data.label}</div>
       <button
         onClick={(e) => {
           props.removeProps.onClick();
           handleRemoveOption(props.data.label);
         }}
-        className="w-8 h-8 rounded-full text-black p-1 bg-red-400"
+        className="w-8 h-8 rounded-full text-black p-1 bg-red-500"
       >
         X
       </button>

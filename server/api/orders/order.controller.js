@@ -3,6 +3,7 @@ const {
   getOrders,
   getOrdersByCustomer,
   getOrdersByDateOrder,
+  getMaxNumOrder,
 } = require("./order.service");
 
 module.exports = {
@@ -59,6 +60,15 @@ module.exports = {
           success: 0,
           message: "Record not Found",
         });
+      }
+      return res.status(200).json(results);
+    });
+  },
+  getLastNumOrder: (req, res) => {
+    getMaxNumOrder((err, results) => {
+      if (err) {
+        console.log(err);
+        return;
       }
       return res.status(200).json(results);
     });

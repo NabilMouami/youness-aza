@@ -21,7 +21,6 @@ const socket = io("http://localhost:5000");
 
 const Nav = ({ children }) => {
   const [show, setShow] = useState(true);
-  const [notifications, setNotifications] = useState([]);
   const [orders, setOrders] = useState([]);
   console.log(orders);
   const navigate = useNavigate();
@@ -29,15 +28,6 @@ const Nav = ({ children }) => {
   const showSideBar = () => {
     setShow(!show);
   };
-  useEffect(() => {
-    socket.on("newOrder", (order) => {
-      setOrders((prevOrders) => [...prevOrders, order]);
-    });
-
-    return () => {
-      socket.off("newOrder");
-    };
-  }, []);
 
   const Logout = async () => {
     await localStorage.removeItem("token");
