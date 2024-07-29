@@ -31,11 +31,13 @@ import { Tooltip } from "@mui/material";
 import SelectOpt from "react-select";
 
 import { detailsProduct } from "../../slices/detailsProduct";
+import UpdOrder from "./UpdOrder";
 function ListOrders() {
   const [listOrders, setListOrders] = useState([]);
   console.log(listOrders);
   const [listFiltred, setListFiltred] = useState([]);
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [rowOrder, setRowOrder] = useState({});
   const [filters, setFilters] = useState({
     order_status: "",
     payment_status: "",
@@ -56,7 +58,16 @@ function ListOrders() {
   }, []);
   const detailsProd = (dts) => {
     dispatch(detailsProduct(dts));
-    navigate("/app/details-order/" + dts.id);
+    navigate("/app/details-order/" + dts.order_num);
+  };
+
+  const openModal = (row) => {
+    setIsModalOpen(true);
+    setRowOrder(row);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
 
   // Functions Of Filters Orders:
@@ -215,7 +226,10 @@ function ListOrders() {
             <div className="flex items-center">
               <Tooltip title="Change Info Order" placement="top">
                 <div className="mt-2">
-                  <RiEdit2Line className="collabListEdit" />
+                  <RiEdit2Line
+                    className="collabListEdit"
+                    onClick={() => openModal(params.row)}
+                  />
                 </div>
               </Tooltip>
             </div>
@@ -235,7 +249,7 @@ function ListOrders() {
   return (
     <Fragment>
       <div className="page__main">
-        {" "}
+        {isModalOpen && <UpdOrder closeModal={closeModal} />}{" "}
         <div className="w-full p-8 flex items-center justify-center justify-between bg-white rounded-2xl">
           <div className="flex flex-col">
             <span className="font-semibold bg-gray-200 rounded-2xl p-2">

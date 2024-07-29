@@ -17,6 +17,8 @@ import AddGroupe from "./pages/produitgroup/AddGroupe";
 import ListOrders from "./pages/order/ListOrders";
 import DetailOrder from "./pages/order/DetailOrder";
 import ListCategories from "./pages/category/ListCategories";
+import EditOrder from "./pages/order/EditOrder";
+import ListCustomers from "./pages/customer/ListCustomers";
 export default function Router() {
   return useRoutes([
     {
@@ -24,6 +26,7 @@ export default function Router() {
       element: <DashboardLayout />,
       children: [
         { path: "utilisateurs", element: <ListUsers /> },
+        { path: "clients", element: <ListCustomers /> },
         { path: "ajoute-produit", element: <AddProduit /> },
         { path: "list-produits", element: <ListProduits /> },
         { path: "hiden-produits", element: <HidenProduits /> },
@@ -35,7 +38,7 @@ export default function Router() {
         { path: "ajoute-produit-to-group", element: <AddProdGroup /> },
         { path: "ajoute-groupe", element: <AddGroupe /> },
         { path: "list-orders", element: <ListOrders /> },
-        { path: "details-order/:id", element: <DetailOrder /> },
+        { path: "details-order/:id", element: <EditOrder /> },
       ],
     },
     {

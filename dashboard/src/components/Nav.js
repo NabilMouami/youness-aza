@@ -66,10 +66,16 @@ const Nav = ({ children }) => {
       key: 5,
     },
     {
+      url: "clients",
+      i_class: "bx bx-smile ",
+      link_title: "Clients",
+      key: 6,
+    },
+    {
       url: "utilisateurs",
       i_class: "bx bxs-user ",
       link_title: "Users",
-      key: 6,
+      key: 7,
     },
   ];
 

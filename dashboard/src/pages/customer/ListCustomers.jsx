@@ -9,14 +9,14 @@ import { useDispatch } from "react-redux";
 import { config_url } from "../../config";
 import Box from "@mui/material/Box";
 
-function ListUsers() {
+function ListCustomers() {
   const [listUsers, setListUsers] = useState([]);
 
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   useEffect(() => {
-    axios.get(`${config_url}/api/users`).then((res) => {
+    axios.get(`${config_url}/api/customers`).then((res) => {
       setListUsers(res.data);
     });
   }, []);
@@ -50,7 +50,7 @@ function ListUsers() {
   }
   const columns = [
     {
-      field: "nom",
+      field: "firstName",
       headerName: "Nom:",
       headerClassName: "super-app-theme--cell",
 
@@ -58,7 +58,7 @@ function ListUsers() {
       editable: true,
     },
     {
-      field: "prenom",
+      field: "lastName",
       headerName: "Prenom:",
       headerClassName: "super-app-theme--cell",
 
@@ -72,13 +72,6 @@ function ListUsers() {
 
       width: 240,
       editable: true,
-    },
-    {
-      field: "role",
-      headerName: "Role:",
-      headerClassName: "super-app-theme--cell",
-
-      width: 140,
     },
 
     {
@@ -112,11 +105,6 @@ function ListUsers() {
 
   return (
     <div className="collabList">
-      <Link to="/app/ajoute-utilisateur">
-        <button className="addnewCollab">
-          <span className="text-xl mr-5">+</span>Ajouter un Utilisateur
-        </button>
-      </Link>
       <Box
         sx={{
           height: "auto",
@@ -141,4 +129,4 @@ function ListUsers() {
   );
 }
 
-export default ListUsers;
+export default ListCustomers;
