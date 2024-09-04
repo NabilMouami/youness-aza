@@ -18,6 +18,8 @@ app.use(express.static("public"));
 const userRouter = require("./api/users/user.router");
 const groupRouter = require("./api/group/group.router");
 const orderRouter = require("./api/orders/order.router");
+const coinRouter = require("./api/coins/coin.router");
+const saleRouter = require("./api/sales/sale.router");
 const customerRouter = require("./api/customers/cust.router");
 
 app.use(cors("*"));
@@ -35,7 +37,9 @@ app.use(cors("*"));
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     console.log(file.fieldname);
-    if (file.fieldname === "image_category") {
+    if (file.fieldname === "image_blog") {
+      cb(null, "public/blogs");
+    } else if (file.fieldname === "image_category") {
       cb(null, "public/categories");
     } else cb(null, "public/images");
   },
@@ -54,6 +58,8 @@ app.use("/api/users", userRouter);
 app.use("/api/groupes", groupRouter);
 app.use("/api/customers", customerRouter);
 app.use("/api/orders", orderRouter);
+app.use("/api/coins", coinRouter);
+app.use("/api/sales", saleRouter);
 
 // Endpoint to handle order creation
 app.post("/create-order", (req, res) => {
@@ -142,11 +148,12 @@ app.post(
   upload.fields([{ name: "image", maxCount: 1 }, { name: "images" }]),
   (req, res) => {
     const image = req.files?.image?.[0]?.filename || null;
-    const status = req.body.status;
     const genre = req.body.genre;
+    const status_model = req.body.status;
     const size_shoes = req.body.size_shoes;
     const meta_image = req.body.meta_image;
     const nom = req.body.nom;
+    const category = req.body.category;
     const prix = req.body.prix;
     let prix_promo = req.body.prix_promo;
     const qty = req.body.size_quantity;
@@ -174,12 +181,12 @@ app.post(
     }
 
     db.query(
-      `insert into produit(name,price,price_promo,status,description,nemuro_shoes,image,meta_image,out_stock,hiden,images,meta_images,qty,genre) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      `insert into produit(name,category,price,price_promo,description,nemuro_shoes,image,meta_image,out_stock,hiden,images,meta_images,qty,genre,status_model) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         nom,
+        category,
         prix,
         prix_promo,
-        status,
         description,
         size_shoes,
         image,
@@ -190,6 +197,7 @@ app.post(
         firstTableString,
         qty,
         genre,
+        status_model,
       ],
       (err, result, fields) => {
         if (err) {
@@ -198,8 +206,8 @@ app.post(
         } else {
           const PrID = result.insertId;
           if (categories.length > 0) {
-            console.log("id", PrID, "categories", categories[0].id);
-            for (i = 0; i < req.body.categories.length - 1; i++) {
+            console.log("Categories:", categories);
+            for (i = 0; i < categories.length; i++) {
               db.query(
                 "INSERT INTO  produit_categorie(produit_id,categorie_id) VALUES (?,?)",
                 [PrID, categories[i]?.id],
@@ -231,6 +239,8 @@ app.put(
     const oldimage = req.body.oldimage;
 
     const category = req.body.category;
+    const category_produit = req.body.category.join(", ");
+    const changed_category = req.body.changed_category;
     const nom = req.body.nom;
     const prix = req.body.prix;
     const prix_promo = req.body.prix_promo;
@@ -238,7 +248,7 @@ app.put(
     const out_of_stock = parseInt(req.body.out_of_stock);
     db.query(
       `update produit set name = ?,price = ?,price_promo = ?,category = ?,description = ?,out_stock = ? WHERE id = ?`,
-      [nom, prix, prix_promo, category, description, out_of_stock, id],
+      [nom, prix, prix_promo, category_produit, description, out_of_stock, id],
       (err, result, fields) => {
         if (err) {
           console.log(err);
@@ -331,26 +341,30 @@ app.put("/api/in_stock", (req, res) => {
 //Alls Products By Priority and Not Hiden
 app.get("/api/products", (req, res) => {
   db.query(
-    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE  produit.hiden = '0' GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    "SELECT produit.id AS id, produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE produit.hiden = '0' GROUP BY produit.id, produit.name, produit.price, produit.qty;",
     (err, result) => {
-      //SELECT
-      //     product.id AS product_id,
-      //     product.name_prod AS product_name,
-      //     product.price,
-      //     product.quantity,
-      //     GROUP_CONCAT(category.name ORDER BY category.name ASC SEPARATOR ', ') AS category_names
-      // FROM
-      //     product
-      // JOIN
-      //     product_category ON product.id = product_category.product_id
-      // JOIN
-      //     category ON product_category.category_id = category.id
-      // GROUP BY
-      //     product.id, product.name_prod, product.price, product.quantity;
       if (err) {
         console.log(err);
+        res.status(500).send("Error fetching products");
       } else {
-        res.send(result);
+        const processedResult = result.map((product) => {
+          // Parse the qty field
+          let qtyArray;
+          try {
+            qtyArray = JSON.parse(product.qty);
+          } catch (e) {
+            console.error(`Failed to parse qty for product ${product.id}:`, e);
+            qtyArray = [];
+          }
+
+          if (Array.isArray(qtyArray) && qtyArray.every((qty) => qty === "0")) {
+            return { ...product, status: "Sold out" };
+          } else {
+            return { ...product };
+          }
+        });
+
+        res.send(processedResult);
       }
     }
   );
@@ -359,7 +373,37 @@ app.get("/api/products", (req, res) => {
 //Alls Products By Priority and Not Hiden
 app.get("/api/interface/products", (req, res) => {
   db.query(
-    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id JOIN product_group ON produit.id=product_group.product_id WHERE  produit.hiden = '0' and produit.out_stock = '1' GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    "SELECT produit.id AS id, produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE produit.hiden = '0' GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    (err, result) => {
+      if (err) {
+        console.log(err);
+        res.status(500).send("Error fetching products");
+      } else {
+        const processedResult = result.map((product) => {
+          // Parse the qty field
+          let qtyArray;
+          try {
+            qtyArray = JSON.parse(product.qty);
+          } catch (e) {
+            console.error(`Failed to parse qty for product ${product.id}:`, e);
+            qtyArray = [];
+          }
+
+          if (Array.isArray(qtyArray) && qtyArray.every((qty) => qty === "0")) {
+            return { ...product, status: "Sold out" };
+          } else {
+            return { ...product };
+          }
+        });
+
+        res.send(processedResult);
+      }
+    }
+  );
+}); //Alls Products By Priority and Not Hiden AND Promotion (collection/on-sale page in Next js)
+app.get("/api/products/promotion", (req, res) => {
+  db.query(
+    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE  produit.hiden = '0'  AND produit.price_promo != 0  GROUP BY produit.id, produit.name, produit.price, produit.qty;",
     (err, result) => {
       if (err) {
         console.log(err);
@@ -369,10 +413,41 @@ app.get("/api/interface/products", (req, res) => {
     }
   );
 });
-//Alls Products By Priority and Not Hiden AND Promotion (collection/on-sale page in Next js)
-app.get("/api/products/promotion", (req, res) => {
+//Alls Products By Status_Model is Release and Not Hiden  (FirstPage Home Body in Next js)
+
+app.get("/api/products/release", (req, res) => {
   db.query(
-    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE  produit.hiden = '0'  AND produit.price_promo != 0  GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE  produit.hiden = '0'  AND produit.status_model = 'release'  GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+      }
+    }
+  );
+});
+//Alls Products By Status_Model is Release and Not Hiden  (collection/nouveaux in Next js)
+
+app.get("/api/products/nouveaux", (req, res) => {
+  db.query(
+    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(categorie.name ORDER BY categorie.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_categorie ON produit.id = produit_categorie.produit_id JOIN categorie ON produit_categorie.categorie_id = categorie.id WHERE  produit.hiden = '0'  AND produit.status_model = 'new'  GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+      }
+    }
+  );
+});
+// statistics in Dashboard of categories of All Product
+app.get("/api/products/categories/statistics", (req, res) => {
+  db.query(
+    ` 
+    SELECT category as name, COUNT(category) AS value
+FROM produit
+GROUP BY category;`,
     (err, result) => {
       if (err) {
         console.log(err);
@@ -392,7 +467,24 @@ app.get("/api/interface/products/:id", (req, res) => {
       if (err) {
         console.log(err);
       } else {
-        res.send(result);
+        const processedResult = result.map((product) => {
+          // Parse the qty field
+          let qtyArray;
+          try {
+            qtyArray = JSON.parse(product.qty);
+          } catch (e) {
+            console.error(`Failed to parse qty for product ${product.id}:`, e);
+            qtyArray = [];
+          }
+
+          if (Array.isArray(qtyArray) && qtyArray.every((qty) => qty === "0")) {
+            return { ...product, status: "Sold out" };
+          } else {
+            return { ...product };
+          }
+        });
+
+        res.send(processedResult);
       }
     }
   );
@@ -428,6 +520,7 @@ app.get("/api/product_group/:id", (req, res) => {
     }
   );
 });
+
 //delete a product
 app.post("/api/product/:id", (req, res) => {
   const id = req.params.id;
@@ -604,6 +697,264 @@ app.post(
     );
   }
 );
+app.put(
+  "/api/update-categorie/:id",
+  upload.single("image_category"),
+  (req, res) => {
+    const imagePath = path.join(__dirname, "public/categories");
+
+    const id = req.params.id;
+    const upload_image = req.body.upload_image;
+    const oldimage = req.body.oldimage;
+    const name = req.body.name;
+    const meta_image = req.body.meta_image;
+
+    db.query(
+      `UPDATE categorie SET name = ?, meta_image = ? WHERE id = ?`,
+      [name, meta_image, id],
+      (err, result) => {
+        if (err) {
+          console.log(err);
+          return res.status(500).send(err);
+        }
+
+        // Handle image upload if necessary
+        const uploadImageBoolean = upload_image === "true";
+        if (uploadImageBoolean) {
+          console.log("hamiiiiiiiid");
+          console.log(req.file); // Access the uploaded file
+
+          if (req.file) {
+            const image = req.file.filename;
+            const imagePathToDelete = path.join(imagePath, oldimage);
+
+            console.log(imagePathToDelete);
+            // Check if the file exists and delete it
+            fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
+              if (err) {
+                console.log("error image deleted !!");
+              } else {
+                fs.unlink(imagePathToDelete, () => {
+                  console.log("deleted Image!!");
+                });
+              }
+            });
+
+            db.query(
+              `UPDATE categorie SET image = ? WHERE id = ?`,
+              [image, id],
+              (err, result) => {
+                if (err) {
+                  console.log(err);
+                  return res.status(500).send(err);
+                }
+                res.send(result);
+              }
+            );
+          } else {
+            console.log("File not found in request");
+            return res.status(400).send("File not found in request");
+          }
+        } else {
+          res.send(result);
+        }
+      }
+    );
+  }
+);
+
+//delete a category
+app.post("/api/categorie/:id", (req, res) => {
+  const id = req.params.id;
+  const { image } = req.body;
+  console.log(req.body);
+
+  const imagePath = path.join(__dirname, "public/categories");
+
+  db.query("DELETE FROM categorie WHERE id = ?", [id], (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.send(result);
+    }
+  });
+  const imagePathToDelete = path.join(imagePath, image);
+  console.log(imagePathToDelete);
+  // Check if the file exists
+  fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
+    if (err) {
+      // File does not exist
+      console.log("error image deleted !!");
+    }
+
+    // Delete the file
+    fs.unlink(imagePathToDelete, () => {
+      console.log("deleted Image!!");
+    });
+  });
+});
+
+app.delete("/api/categorie/:produit_id/:categoryName", (req, res) => {
+  const { produit_id, categoryName } = req.params;
+
+  // First, get the category information from the 'categorie' table by categoryName
+  db.query(
+    "SELECT id FROM categorie WHERE name = ?",
+    [categoryName],
+    (err, categoryResult) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).send("Error fetching category information");
+      }
+
+      if (categoryResult.length > 0) {
+        const categorie_id = categoryResult[0].id;
+
+        // If category is found, proceed with deleting the entry from 'produit_categorie'
+        db.query(
+          "DELETE FROM produit_categorie WHERE produit_id = ? AND categorie_id = ?",
+          [produit_id, categorie_id],
+          (deleteErr, deleteResult) => {
+            if (deleteErr) {
+              console.log(deleteErr);
+              return res.status(500).send("Error deleting category");
+            }
+            res.send({ message: "Category deleted", result: deleteResult });
+          }
+        );
+      } else {
+        res.status(404).send("Category not found");
+      }
+    }
+  );
+});
+
+//blog Crud:
+app.get("/api/blogs", (req, res) => {
+  db.query("SELECT * FROM blog ", (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.send(result);
+    }
+  });
+});
+app.post("/api/create-blog", upload.single("image_blog"), (req, res) => {
+  const image = req.file?.filename || null;
+  console.log(image);
+  const { meta_image_blog, title, description, categoryId, date_creation } =
+    req.body;
+
+  db.query(
+    `insert into blog(title,image,description,meta_image,date_created,categorie_blog_id) values(?,?,?,?,?,?)`,
+    [title, image, description, meta_image_blog, date_creation, categoryId],
+    (err, result, fields) => {
+      if (err) {
+        console.log(err);
+        res.status(500).send(err); // Send error response
+      } else {
+        res.send(result);
+      }
+    }
+  );
+});
+app.put(
+  "/api/update-categorie/:id",
+  upload.single("image_blog"),
+  (req, res) => {
+    const imagePath = path.join(__dirname, "public/blog");
+
+    const id = req.params.id;
+    const upload_image = req.body.upload_image;
+    const oldimage = req.body.oldimage;
+    const name = req.body.name;
+    const meta_image = req.body.meta_image;
+
+    db.query(
+      `UPDATE blog SET title = ?, meta_image = ? WHERE id = ?`,
+      [name, meta_image, id],
+      (err, result) => {
+        if (err) {
+          console.log(err);
+          return res.status(500).send(err);
+        }
+
+        // Handle image upload if necessary
+        const uploadImageBoolean = upload_image === "true";
+        if (uploadImageBoolean) {
+          console.log("hamiiiiiiiid");
+          console.log(req.file); // Access the uploaded file
+
+          if (req.file) {
+            const image = req.file.filename;
+            const imagePathToDelete = path.join(imagePath, oldimage);
+
+            console.log(imagePathToDelete);
+            // Check if the file exists and delete it
+            fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
+              if (err) {
+                console.log("error image deleted !!");
+              } else {
+                fs.unlink(imagePathToDelete, () => {
+                  console.log("deleted Image!!");
+                });
+              }
+            });
+
+            db.query(
+              `UPDATE blog SET image = ? WHERE id = ?`,
+              [image, id],
+              (err, result) => {
+                if (err) {
+                  console.log(err);
+                  return res.status(500).send(err);
+                }
+                res.send(result);
+              }
+            );
+          } else {
+            console.log("File not found in request");
+            return res.status(400).send("File not found in request");
+          }
+        } else {
+          res.send(result);
+        }
+      }
+    );
+  }
+);
+
+//delete a blog
+app.post("/api/blog/:id", (req, res) => {
+  const id = req.params.id;
+  const { image } = req.body;
+  console.log(req.body);
+
+  const imagePath = path.join(__dirname, "public/blogs");
+
+  db.query("DELETE FROM blog WHERE id = ?", [id], (err, result) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.send(result);
+    }
+  });
+  const imagePathToDelete = path.join(imagePath, image);
+  console.log(imagePathToDelete);
+  // Check if the file exists
+  fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
+    if (err) {
+      // File does not exist
+      console.log("error image deleted !!");
+    }
+
+    // Delete the file
+    fs.unlink(imagePathToDelete, () => {
+      console.log("deleted Image!!");
+    });
+  });
+});
+
 app.listen(port, () => {
   console.log("server is running ...");
 });

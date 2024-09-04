@@ -18,17 +18,8 @@ import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import Swal from "sweetalert2";
-import {
-  RiAddCircleFill,
-  RiDeleteBin6Fill,
-  RiEdit2Line,
-  RiEyeOffLine,
-  RiEyeLine,
-  RiCheckDoubleFill,
-  RiCloseLargeFill,
-} from "react-icons/ri";
+import { RiDeleteBin6Fill, RiEdit2Line, RiEyeLine } from "react-icons/ri";
 import { Tooltip } from "@mui/material";
-import SelectOpt from "react-select";
 
 import { detailsProduct } from "../../slices/detailsProduct";
 import UpdOrder from "./UpdOrder";
@@ -60,7 +51,32 @@ function ListOrders() {
     dispatch(detailsProduct(dts));
     navigate("/app/details-order/" + dts.order_num);
   };
-
+  const deleteOrder = (id) => {
+    axios.delete(`${config_url}/api/orders/${id}`).then(() => {
+      setListOrders(listOrders.filter((row) => row.order_num !== id));
+    });
+  };
+  function popup(id, nom_client, date_order) {
+    Swal.fire({
+      title: "Êtes vous sûr?",
+      text: "Vous ne pourrez pas revenir en arrière!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      cancelButtonText: "Annuler",
+      confirmButtonText:
+        "Oui, supprimez Order Of Customer:" +
+        nom_client +
+        "at Date: " +
+        date_order,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteOrder(id);
+        Swal.fire("Supprimé!", "Order is Deleted.", "success");
+      }
+    });
+  }
   const openModal = (row) => {
     setIsModalOpen(true);
     setRowOrder(row);
@@ -111,6 +127,13 @@ function ListOrders() {
   });
 
   const columns = [
+    {
+      field: "order_num",
+      headerName: "Num Order:",
+      headerClassName: "super-app-theme--cell",
+
+      width: 100,
+    },
     {
       field: "nom_client",
       headerName: "Customer:",
@@ -236,7 +259,16 @@ function ListOrders() {
             <div className="flex items-center">
               <Tooltip title="Delete Order" placement="top">
                 <div className="mt-2">
-                  <RiDeleteBin6Fill className="collabListDelete" />
+                  <RiDeleteBin6Fill
+                    className="collabListDelete"
+                    onClick={() => {
+                      popup(
+                        params.row.order_num,
+                        params.row.nom_client,
+                        params.row.date_order
+                      );
+                    }}
+                  />
                 </div>
               </Tooltip>
             </div>

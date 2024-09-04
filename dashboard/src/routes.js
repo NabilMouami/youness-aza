@@ -1,4 +1,4 @@
-import { Navigate, useRoutes } from "react-router-dom";
+import { useRoutes } from "react-router-dom";
 import DashboardLayout from "./layouts/DashboardLayout";
 import PublicRoutesLayout from "./layouts/PublicRoutesLayout";
 import ListUsers from "./pages/auth/ListUsers";
@@ -19,6 +19,9 @@ import DetailOrder from "./pages/order/DetailOrder";
 import ListCategories from "./pages/category/ListCategories";
 import EditOrder from "./pages/order/EditOrder";
 import ListCustomers from "./pages/customer/ListCustomers";
+import CustomerDetailsOrder from "./pages/customer/CustomerDetailsOrder";
+import AddBlog from "./pages/blog/AddBlog";
+import ListBlogs from "./pages/blog/ListBlogs";
 export default function Router() {
   return useRoutes([
     {
@@ -27,6 +30,7 @@ export default function Router() {
       children: [
         { path: "utilisateurs", element: <ListUsers /> },
         { path: "clients", element: <ListCustomers /> },
+        { path: "clients/orders/:id", element: <CustomerDetailsOrder /> },
         { path: "ajoute-produit", element: <AddProduit /> },
         { path: "list-produits", element: <ListProduits /> },
         { path: "hiden-produits", element: <HidenProduits /> },
@@ -34,6 +38,9 @@ export default function Router() {
         { path: "details-produit/:id", element: <DetailsProd /> },
         { path: "ajoute-categorie", element: <AddCategory /> },
         { path: "list-categories", element: <ListCategories /> },
+
+        { path: "ajoute-blog", element: <AddBlog /> },
+        { path: "list-blogs", element: <ListBlogs /> },
 
         { path: "ajoute-produit-to-group", element: <AddProdGroup /> },
         { path: "ajoute-groupe", element: <AddGroupe /> },

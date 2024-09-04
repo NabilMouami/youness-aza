@@ -1,22 +1,38 @@
-import React, { useState, Fragment } from "react";
+import React, { useState, Fragment, useEffect } from "react";
 import axios from "axios";
+import Chip from "@mui/material/Chip";
+import Paper from "@mui/material/Paper";
+import { styled } from "@mui/material/styles";
+import ClipLoader from "react-spinners/ClipLoader";
+
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import { config_url } from "../../config";
+import SelectOpt from "react-select";
 
 import { toast } from "react-toastify";
-import {
-  MdCloudUpload,
-  MdDelete,
-  MdVideoLibrary,
-  MdEditDocument,
-} from "react-icons/md";
+import { MdCloudUpload, MdDelete, MdEditDocument } from "react-icons/md";
 import { AiFillFileImage } from "react-icons/ai";
 import { RiCloseLargeFill } from "react-icons/ri";
+import UpdCategories from "./UpdCategories";
+
+const ListItem = styled("li")(({ theme }) => ({
+  margin: theme.spacing(0.5),
+}));
+
 function UpdProduit() {
   const Detail = useSelector((state) => state.Load);
   const { Col } = Detail;
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectVille, setSelectVille] = useState("");
+  const [categoryArray, setCategoryArray] = useState(
+    Col.category_names.split(", ") || []
+  );
+  console.log(categoryArray);
+  const [showSpinner, setShowSpinner] = useState(true);
 
+  const [showSelectCategories, setShowSelectCategories] = useState(false);
   const [category, setSelectCategory] = useState(Col.category);
   const [nom, setNom] = useState(Col.name);
   const [description, setDescription] = useState(Col.description);
@@ -48,7 +64,7 @@ function UpdProduit() {
     formdata.append("prix", prix);
     formdata.append("prix_promo", prix_promo);
     formdata.append("out_of_stock", out_of_stock);
-    formdata.append("category", category);
+    formdata.append("category", categoryArray);
 
     try {
       const response = await axios.put(
@@ -72,6 +88,13 @@ function UpdProduit() {
     }
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSpinner(false);
+    }, 3000); // Change the delay time as needed (3000ms = 3 seconds)
+
+    return () => clearTimeout(timer);
+  }, []);
   const removeImage = (filenameToRemove) => {
     setDisableImages(false);
     const data = JSON.parse(selectedFiles).filter(
@@ -101,9 +124,35 @@ function UpdProduit() {
       }
     });
   }
-  const handleSelectCategory = (e) => {
-    setSelectCategory(e.target.value);
+  useEffect(() => {
+    axios
+      .get(`${config_url}/api/categories`)
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setCategories(res.data);
+        } else {
+          console.error(
+            "Invalid data structure received for categories:",
+            res.data
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching categories:", error);
+      });
+  }, []);
+
+  const handleDelete = (chipToDelete) => async () => {
+    await setCategoryArray((chips) =>
+      chips.filter((chip) => chip !== chipToDelete)
+    );
+    await setShowSelectCategories(true);
+    // await popup(chipToDelete.product_id, chipToDelete.related_id);
+    // setTimeout(() => {
+    //   window.location.reload(false);
+    // }, "2000");
   };
+
   const handleSelectOutOfStock = (e) => {
     setOut(e.target.value);
   };
@@ -129,7 +178,45 @@ function UpdProduit() {
       console.error("Error:", error);
     }
   };
+  const selOptions = [];
+  const ids = categories?.map((o) => o.name);
+  const filtered = categories?.filter(
+    ({ name }, index) => !ids?.includes(name, index + 1)
+  );
 
+  for (let i = 0; i < filtered.length; i++) {
+    if (filtered.length > 0) {
+      selOptions.push({
+        value: filtered[i].name,
+        label: filtered[i].name,
+        id: filtered[i].id,
+      });
+    }
+  }
+
+  const handle = (e) => {
+    console.log(e);
+    const value = e.map((option) => option.label);
+    setSelectVille(value);
+    setSelectedCategories(e);
+    setCategoryArray([...categoryArray, value]);
+  };
+  const handleRemoveOption = (removedValue) => {};
+
+  const customMultiValue = (props) => (
+    <div className="flex gap-2 ml-2 font-bold">
+      <div>{props.data.label}</div>
+      <button
+        onClick={(e) => {
+          props.removeProps.onClick();
+          handleRemoveOption(props.data.label);
+        }}
+        className="w-8 h-8 rounded-full text-black p-1 bg-red-400"
+      >
+        X
+      </button>
+    </div>
+  );
   return (
     <Fragment>
       <div className="page__main">
@@ -183,21 +270,26 @@ function UpdProduit() {
             </div>
           </div>
           <div className="flex justify-center items-center">
-            <div className="w-90 flex flex-col items-center px-3">
-              <label className="ml-12 mb-2 block text-lg font-bold text-black">
-                Category:
-              </label>
+            {showSelectCategories && (
+              <>
+                {showSpinner ? (
+                  <ClipLoader loading={showSpinner} size={10} />
+                ) : (
+                  <div className="flex flex-col items-center">
+                    <span className="text-black font-bold">Categorie :</span>
+                    <SelectOpt
+                      className="Options"
+                      options={selOptions}
+                      isMulti
+                      onChange={handle}
+                      components={{ MultiValue: customMultiValue }}
+                    />
+                  </div>
+                )}
+              </>
+            )}
 
-              <select
-                className="ml-10"
-                value={category}
-                onChange={handleSelectCategory}
-              >
-                <option value="air-force-1">Air Force 1</option>
-                <option value="air-jordan">Air Jordan</option>
-                <option value="dunk">Dunk</option>
-              </select>
-            </div>
+            <UpdCategories />
             <div className="w-90 flex flex-col items-center px-3">
               <label className="ml-12 mb-2 block text-lg font-bold text-black">
                 Out Of Stock:
@@ -233,7 +325,7 @@ function UpdProduit() {
 
                 {image ? (
                   <img
-                    className="rounded-full"
+                    className="w-[150px] h-[150px] rounded-full border-2 border-gray-400"
                     src={
                       typeof image === "string"
                         ? image

@@ -17,7 +17,7 @@ import {
   RiCheckDoubleFill,
   RiCloseLargeFill,
 } from "react-icons/ri";
-import { Tooltip } from "@mui/material";
+import { Tooltip, Typography } from "@mui/material";
 import SelectOpt from "react-select";
 
 import { detailsProduct } from "../../slices/detailsProduct";
@@ -228,6 +228,13 @@ function ListProduits() {
       headerClassName: "super-app-theme--cell",
 
       width: 200,
+      renderCell: (params) => {
+        return (
+          <div style={{ whiteSpace: "pre-line", overflow: "hidden" }}>
+            <Typography>{params.row.name}</Typography>
+          </div>
+        );
+      },
     },
     {
       field: "category_names",

@@ -15,14 +15,10 @@ import { Menu, MenuItem, MenuButton } from "@szhsin/react-menu";
 import "@szhsin/react-menu/dist/index.css";
 import "@szhsin/react-menu/dist/transitions/slide.css";
 import "./Nav.modules.css";
-import io from "socket.io-client";
-
-const socket = io("http://localhost:5000");
 
 const Nav = ({ children }) => {
   const [show, setShow] = useState(true);
-  const [orders, setOrders] = useState([]);
-  console.log(orders);
+
   const navigate = useNavigate();
 
   const showSideBar = () => {
@@ -53,29 +49,35 @@ const Nav = ({ children }) => {
       key: 3,
     },
     {
+      url: "/app/list-blogs",
+      i_class: "bx bxs-book-content",
+      link_title: "Blogs",
+      key: 4,
+    },
+    {
       url: "/app/ajoute-produit-to-group",
       i_class: "bx bx-link",
       link_title: "Relation Products",
-      key: 4,
+      key: 5,
     },
 
     {
       url: "/app/hiden-produits",
       i_class: "bx bxs-low-vision",
       link_title: "Hiden Produits",
-      key: 5,
+      key: 6,
     },
     {
       url: "clients",
       i_class: "bx bx-smile ",
       link_title: "Clients",
-      key: 6,
+      key: 7,
     },
     {
       url: "utilisateurs",
       i_class: "bx bxs-user ",
       link_title: "Users",
-      key: 7,
+      key: 8,
     },
   ];
 
@@ -111,7 +113,7 @@ const Nav = ({ children }) => {
             <MenuButton className="relative hover:bg-secondary-100 p-2 rounded-lg transition-colors">
               <RiNotification3Line />
               <span className="absolute -top-0.5 right-0 bg-primary py-0.5 px-[5px] box-content text-black rounded-full text-[8px] font-bold">
-                {orders.length}
+                0
               </span>
             </MenuButton>
           }

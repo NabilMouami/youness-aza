@@ -25,6 +25,7 @@ import {
 } from "react-icons/ri";
 import { Tooltip } from "@mui/material";
 import SelectOpt from "react-select";
+import UpdCategory from "./UpdCategory";
 
 const style = {
   position: "absolute",
@@ -40,6 +41,8 @@ const style = {
 
 function ListCategories() {
   const [categories, setCategories] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [rowCategory, setRowCategory] = useState({});
   const [open, setOpen] = React.useState(false);
   const [image, setImage] = useState("");
   const handleOpen = () => setOpen(true);
@@ -64,7 +67,7 @@ function ListCategories() {
 
   const deleteCategory = (id, image) => {
     axios
-      .post(`${config_url}/api/categories/${id}`, { image: image })
+      .post(`${config_url}/api/categorie/${id}`, { image: image })
       .then(() => {
         setCategories(categories.filter((row) => row.id !== id));
       });
@@ -91,8 +94,18 @@ function ListCategories() {
 
     await setImage(image);
   };
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
+  const openModal = (row) => {
+    setIsModalOpen(true);
+    setRowCategory(row);
+  };
   return (
     <Fragment>
+      {isModalOpen && (
+        <UpdCategory closeModal={closeModal} rowCategory={rowCategory} />
+      )}{" "}
       <Modal
         open={open}
         onClose={handleClose}
@@ -144,7 +157,7 @@ function ListCategories() {
                   <td className="py-2 px-4 border border-gray-300">
                     {item.meta_image}
                   </td>
-                  <td className="py-2 px-4 border border-gray-300">
+                  <td className="flex items-center justify-center py-2 px-4 ">
                     <div>
                       <RiDeleteBin6Fill
                         className="collabListDelete"
@@ -152,6 +165,16 @@ function ListCategories() {
                           popup(item.id, item.name, item.image);
                         }}
                       />
+                    </div>
+                    <div className="flex items-center">
+                      <Tooltip title="Change Info Order" placement="top">
+                        <div className="mt-2">
+                          <RiEdit2Line
+                            className="collabListEdit"
+                            onClick={() => openModal(item)}
+                          />
+                        </div>
+                      </Tooltip>
                     </div>
                   </td>
                 </tr>

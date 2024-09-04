@@ -1,11 +1,16 @@
-import { Fragment, useState, useEffect } from "react";
+import { Fragment, useState, useEffect, useMemo } from "react";
 import { RiArrowLeftLine, RiSendPlaneFill } from "react-icons/ri";
-import { AiFillEdit, AiOutlineFieldTime } from "react-icons/ai";
+import {
+  AiFillEdit,
+  AiOutlineFieldTime,
+  AiOutlineSafety,
+  AiFillCloseCircle,
+  AiFillCheckSquare,
+} from "react-icons/ai";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import { toast } from "react-toastify";
-import SelectOpt from "react-select";
 
 import { useSelector } from "react-redux";
 import axios from "axios";
@@ -20,6 +25,9 @@ import Divider from "@mui/material/Divider";
 import EditItemDiscount from "./EditItemDiscount";
 import EditCustomerInformation from "./EditCustomerInformation";
 import AddProductToOrder from "./AddProductToOrder";
+import AddJustQty from "./AddJustQty";
+import DeleteItemOrder from "./DeleteItemOrder";
+import AnnulerOrder from "./AnnulerOrder";
 
 function EditOrder() {
   const Detail = useSelector((state) => state.Load);
@@ -28,22 +36,49 @@ function EditOrder() {
   console.log(listProds);
   const [listOrders, setListOrders] = useState([]);
   console.log(listOrders);
+  const [productList, setProductList] = useState([]);
+
   const [status_dlivery, setSelectStatus] = useState(Col.delivery_status);
   const [changed_status_dlivery, setChangedSelectStatus] = useState(false);
-  const [selectedSizes, setSelectedSizes] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [opendelete, setOpenDelete] = useState(false);
+  const [rowDeleteItem, setRowDeleteItem] = useState({});
+
   const [isModalOpenCustomer, setIsModalOpenCustomer] = useState(false);
+  const [isModalOpenQty, setIsModalOpenQty] = useState(false);
+  const [isModalOpenAnnuler, setIsModalOpenAnnuler] = useState(false);
   const [rowOrder, setRowOrder] = useState({});
   const [discount, setDiscount] = useState(0);
+  const [qty, setQty] = useState(0);
 
   let total = 0;
   let total_items = 0;
   listOrders?.forEach((data) => {
-    const price = data.total_price;
+    const price = data.total_price * data.items;
     total += price;
     const items_qty = data.items;
     total_items += items_qty;
   });
+
+  useEffect(() => {
+    if (listOrders) {
+      const updatedProductList = listOrders?.map((data) => ({
+        productId: data.prod_id,
+        productName: data.name,
+        productSize: data.size,
+        productPrice: data.total_price,
+        qty: data.items,
+        nom_client: data.nom_client,
+        email: data.email,
+        telephone: data.telephone,
+        adresse: data.adresse,
+        ville: data.ville,
+        date_order: data.date_order,
+      }));
+      setProductList(updatedProductList);
+    }
+  }, [listOrders]);
+
   useEffect(() => {
     axios
       .get(`${config_url}/api/orders/order_id/${Col.order_num}`)
@@ -72,7 +107,7 @@ function EditOrder() {
         custom_id: listOrders[0]?.custom_id,
         delivery_status: status_dlivery,
       })
-      .then((res) => {
+      .then(() => {
         toast.success("Discount Price Product !!", {
           position: "top-right",
         });
@@ -87,13 +122,36 @@ function EditOrder() {
   const closeModal = () => {
     setIsModalOpen(false);
   };
-
+  const openDelete = (row) => {
+    setOpenDelete(true);
+    setRowDeleteItem(row);
+  };
+  const handleCloseDelete = () => {
+    setOpenDelete(false);
+    setRowDeleteItem({});
+  };
   const openModalCustomer = () => {
     setIsModalOpenCustomer(true);
   };
 
   const closeModalCustomer = () => {
     setIsModalOpenCustomer(false);
+  };
+
+  const openModalQty = () => {
+    setIsModalOpenQty(true);
+  };
+
+  const closeModalQty = () => {
+    setIsModalOpenQty(false);
+  };
+
+  const openModalAnnuler = () => {
+    setIsModalOpenAnnuler(true);
+  };
+
+  const closeModalAnnuler = () => {
+    setIsModalOpenAnnuler(false);
   };
 
   //Filters
@@ -116,6 +174,20 @@ function EditOrder() {
       });
     }
   }
+  // maked Customer as Paid Status and Earn Coins
+  const makeAsPaid = (order_num, customerId, coinsPayed) => {
+    axios
+      .put(`${config_url}/api/orders/ispaid/${order_num}/${customerId}`, {
+        amountSpent: total,
+        coins_payed: coinsPayed,
+        infos: productList,
+      })
+      .then(() => {
+        toast.success("Maked Order Is Paid !!", {
+          position: "top-right",
+        });
+      });
+  };
 
   return (
     <Fragment>
@@ -133,6 +205,29 @@ function EditOrder() {
           closeModalCustomer={closeModalCustomer}
           productId={listOrders[0]?.prod_id}
           customerId={listOrders[0]?.custom_id}
+        />
+      )}{" "}
+      {isModalOpenQty && (
+        <AddJustQty
+          closeModalQty={closeModalQty}
+          qty={qty}
+          setQty={setQty}
+          productId={listOrders[0]?.prod_id}
+          customerId={listOrders[0]?.custom_id}
+        />
+      )}{" "}
+      {isModalOpenAnnuler && (
+        <AnnulerOrder
+          closeModalAnnuler={closeModalAnnuler}
+          customerId={listOrders[0]?.custom_id}
+          productList={productList}
+        />
+      )}{" "}
+      {opendelete && (
+        <DeleteItemOrder
+          openDelete={openDelete}
+          handleCloseDelete={handleCloseDelete}
+          rowDeleteItem={rowDeleteItem}
         />
       )}{" "}
       <div className="flex items-center justify-center bold font-sans text-2xl text-black m-6">
@@ -172,8 +267,12 @@ function EditOrder() {
                     <Button onClick={() => openModal(item)}>
                       Edit discount
                     </Button>
-                    <Button>Add Just Quantity</Button>
-                    <Button>Remove item</Button>
+                    <Button onClick={() => openModalQty()}>
+                      Add Just Quantity
+                    </Button>
+                    <Button onClick={() => openDelete(item)}>
+                      Remove item
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -184,28 +283,18 @@ function EditOrder() {
               <Typography variant="h3" gutterBottom>
                 Payment
               </Typography>
-              <div className="bg-[#FFD35A] flex items-center justify-center p-2 rounded-2xl m-4 gap-8">
-                <AiOutlineFieldTime size={40} />
-                <span className="text-2xl font-bold">Payment pending</span>
-              </div>
+              {Col.payment_status === "COD" ? (
+                <div className="bg-[#FFD35A] flex items-center justify-center p-2 rounded-2xl m-4 gap-8">
+                  <AiOutlineFieldTime size={40} />
+                  <span className="text-2xl font-bold">Payment pending</span>
+                </div>
+              ) : (
+                <div className="bg-green-400 flex items-center justify-center p-2 rounded-2xl m-4 gap-8">
+                  <AiOutlineSafety size={40} />
+                  <span className="text-2xl font-bold">Payed</span>
+                </div>
+              )}
               <Card variant="outlined" sx={{ maxWidth: "100%" }}>
-                <Box sx={{ p: 2 }}>
-                  <Stack
-                    direction="row"
-                    justifyContent="space-between"
-                    alignItems="center"
-                  >
-                    <Typography gutterBottom variant="h5" component="div">
-                      Original Order
-                    </Typography>
-                    <Typography gutterBottom variant="h6" component="div">
-                      {listOrders[0]?.date_order}
-                    </Typography>
-                    <Typography gutterBottom variant="h6" component="div">
-                      {total} Dh
-                    </Typography>
-                  </Stack>
-                </Box>
                 <Divider />
                 <Box sx={{ p: 2 }}>
                   <Stack
@@ -238,7 +327,7 @@ function EditOrder() {
                       Standard (0.0Kg ,items 0.0kg, Package 0.0kg)
                     </Typography>
                     <Typography gutterBottom variant="h6" component="div">
-                      0.0 Dh
+                      {total > 1000 ? "0 Dh" : "50 Dh"}
                     </Typography>
                   </Stack>
                 </Box>
@@ -254,7 +343,7 @@ function EditOrder() {
                     </Typography>
 
                     <Typography gutterBottom variant="h6" component="div">
-                      0.0 Dh
+                      {total > 1000 ? total : total + 50} Dh
                     </Typography>
                   </Stack>
                 </Box>
@@ -289,6 +378,52 @@ function EditOrder() {
                     </Typography>
                   </Stack>
                 </Box>
+                <Box sx={{ p: 2, mt: 2 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                  >
+                    <Typography gutterBottom variant="h5" component="div">
+                      Coins Paid:
+                    </Typography>
+
+                    <Typography gutterBottom variant="h6" component="div">
+                      {Col.coins_payed} Coins
+                    </Typography>
+                  </Stack>
+                </Box>
+                <Stack
+                  direction="row"
+                  spacing={2}
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  margin={2}
+                >
+                  <Button
+                    color="primary"
+                    variant="contained"
+                    onClick={() =>
+                      makeAsPaid(
+                        listOrders[0]?.order_num,
+                        Col.custom_id,
+                        Col.coins_payed
+                      )
+                    }
+                    startIcon={<AiFillCheckSquare />}
+                  >
+                    Make as paid
+                  </Button>
+                  <Button
+                    color="error"
+                    variant="contained"
+                    onClick={() => openModalAnnuler()}
+                    startIcon={<AiFillCloseCircle />}
+                  >
+                    Cancel Order
+                  </Button>
+                </Stack>
               </Card>
             </Box>{" "}
           </div>

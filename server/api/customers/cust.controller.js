@@ -6,6 +6,9 @@ const {
   updateCustomer,
   deleteCustomer,
   updateCustomerWithoutPassword,
+  getOrdersCustomer,
+  getTotalCoinsCustomer,
+  verifyOtp,
 } = require("./cust.service");
 const { hashSync, genSaltSync, compareSync } = require("bcrypt");
 const { sign } = require("jsonwebtoken");
@@ -61,6 +64,10 @@ module.exports = {
     getCustomerByCustomerEmail(body.email, (err, results) => {
       if (err) {
         console.log(err);
+        return res.json({
+          success: 0,
+          data: "Error retrieving customer",
+        });
       }
       if (!results) {
         return res.json({
@@ -68,29 +75,93 @@ module.exports = {
           data: "Invalid email or password",
         });
       }
-      const result = compareSync(body.password, results.password);
-      if (result) {
-        results.password = undefined;
-        const jsontoken = sign({ result: results }, "customeryazasneackers", {
-          expiresIn: "8h",
-        });
-        broadcast({ event: "USER_REGISTERED", body });
 
-        return res.json({
-          results: results,
-          token: jsontoken,
-        });
-      } else {
-        return res.json({
+      getTotalCoinsCustomer(results.id, (error, balanceResults) => {
+        if (error) {
+          console.log(error);
+          return res.json({
+            success: 0,
+            data: "Error retrieving balance",
+          });
+        }
+
+        // Check if balanceResults is defined and has a balance property
+        if (!balanceResults || typeof balanceResults.balance === "undefined") {
+          console.log("Balance is undefined");
+          // Set a default value for balance if it's undefined
+          balanceResults = { balance: 0 }; // You can adjust this default as needed
+        }
+
+        const balance = balanceResults.balance;
+        const coinsPending = balanceResults.coins_pending;
+
+        console.log("Balance:" + balance + ",Coins Pending:", coinsPending);
+
+        const result = compareSync(body.password, results.password);
+        if (result) {
+          results.password = undefined;
+          results.balance = balance;
+          results.coins_pending = coinsPending;
+          const jsontoken = sign({ result: results }, "customeryazasneackers", {
+            expiresIn: "8h",
+          });
+          broadcast({ event: "USER_REGISTERED", body });
+
+          return res.json({
+            results: results,
+            token: jsontoken,
+            balance: balance, // Include balance in response if needed
+            coins_pending: coinsPending,
+          });
+        } else {
+          return res.json({
+            success: 0,
+            data: "Invalid email or password",
+          });
+        }
+      });
+    });
+  },
+
+  verifyOtpCust: (req, res) => {
+    const body = req.body;
+    verifyOtp(body, (err, results) => {
+      if (err) {
+        console.log(err);
+        return res.status(500).json({
           success: 0,
-          data: "Invalid email or password",
+          message: "Database connection errror",
         });
       }
+      return res.status(200).json({
+        success: 1,
+        data: results,
+      });
     });
   },
   getCustByCustId: (req, res) => {
     const id = req.params.id;
     getCustomerByCustomerId(id, (err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      if (!results) {
+        return res.json({
+          success: 0,
+          message: "Record not Found",
+        });
+      }
+      results.password = undefined;
+      return res.json({
+        success: 1,
+        data: results,
+      });
+    });
+  },
+  getAllOrdersCustomer: (req, res) => {
+    const id = req.params.id;
+    getOrdersCustomer(id, (err, results) => {
       if (err) {
         console.log(err);
         return;

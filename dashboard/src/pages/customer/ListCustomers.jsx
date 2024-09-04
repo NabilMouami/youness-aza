@@ -24,7 +24,7 @@ function ListCustomers() {
   const details = (dts) => {
     dispatch(detailsProduct(dts));
 
-    navigate("/app/changer-user/" + dts.id);
+    navigate("/app/clients/orders/" + dts.id);
   };
   const deleteEmployee = (id) => {
     axios.delete(`${config_url}/api/users/${id}`, {}).then(() => {

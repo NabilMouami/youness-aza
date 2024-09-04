@@ -1,10 +1,74 @@
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Order Confirmation</title>
+    <style>
+      body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin:
+      0; padding: 0; } .container { max-width: 600px; margin: 20px auto;
+      background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0
+      10px rgba(0, 0, 0, 0.1); } .header { text-align: center; font-size: 18px;
+      margin-bottom: 20px; } .button { display: inline-block; background-color:
+      #28a745; color: #fff; padding: 10px 20px; text-decoration: none;
+      border-radius: 5px; margin: 10px 0; } .order-summary { border-top: 1px
+      solid #e0e0e0; border-bottom: 1px solid #e0e0e0; padding: 15px 0; margin:
+      20px 0; } .order-summary h2 { font-size: 18px; margin: 0 0 10px 0; }
+      .order-item { display: flex; justify-content: space-between; margin: 10px
+      0; } .order-item img { width: 50px; height: 50px; object-fit: cover; }
+      .order-item div { flex: 1; margin-left: 10px; } .order-item div p {
+      margin: 0; font-size: 14px; } .total { text-align: right; font-size: 16px;
+      font-weight: bold; margin: 10px 0; } .details { font-size: 14px; margin:
+      10px 0; } .details p { margin: 5px 0; } .footer { text-align: center;
+      font-size: 12px; color: #888; margin-top: 20px; }
+    </style>
   </head>
   <body>
-    <h1>Thank you for your order, {{nom_client}}!</h1>
-    <p>Your order ID is: {{order_num}}</p>
-    <p>Total: {{total_price}}</p>
+    <div class="container">
+      <div class="header">
+        <p>{{nom_client}}
+          placed order #{{order_num}}
+          on
+          {{date_order}}
+         
+      </div>
+      <div style="text-align: center;">
+        <a class="button">View order</a>
+      </div>
+      <div class="order-summary">
+        <h2>Order summary</h2>
+        {{#each items}}
+          <div class="order-item">
+            <div>
+              <p>{{this.name}}</p>
+              <p>{{this.productPrice}}DH </p>
+              <p>Size: {{this.productSize}}</p>
+            </div>
+          </div>
+        {{/each}}
+        <div class="total">
+          <p>Subtotal: {{total_price}}DH</p>
+          <p>Shipping 0 DH</p>
+          <p>Total: {{total_price}}DH</p>
+        </div>
+      </div>
+      <div class="details">
+        <h3>Payment processing method</h3>
+        <p>COD</p>
+      </div>
+      <div class="details">
+        <h3>Delivery method</h3>
+        <p>COD</p>
+      </div>
+      <div class="details">
+        <h3>Shipping address</h3>
+        <p>Client:{{nom_client}}</p>
+        <p>Adresse: {{adresse}}</p>
+        <p>Ville:{{ville}}</p>
+        <p>Tel:{{telephone}}</p>
+      </div>
+      <div class="footer">
+        <p>&copy; 2024 Your Company. All rights reserved.</p>
+      </div>
+    </div>
   </body>
 </html>

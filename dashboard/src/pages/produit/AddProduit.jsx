@@ -20,9 +20,11 @@ import { AiFillFileImage } from "react-icons/ai";
 import { RiCloseLargeFill } from "react-icons/ri";
 
 function AddProduit() {
+  const [selectedGenres, setSelectedGenres] = useState("");
   const [genre, setSelectGenre] = useState("homme");
   const [categories, setCategories] = useState([]);
-  console.log(categories);
+  const [category, setCategory] = useState("");
+  console.log(category);
   const [status, setSelectStatus] = useState("new");
   const [qty, setQty] = useState(0);
   const [quantity, setQuantity] = useState("");
@@ -38,7 +40,6 @@ function AddProduit() {
   // Join the strings with commas and enclose the entire array in brackets
   const size_shoes = `[ ${valueStrings.join(",")} ]`;
   const size_quantity = `[ ${quantityStrings.join(",")} ]`;
-  console.log(size_quantity);
   const [description, setDescription] = useState("");
 
   const [image, setImage] = useState("");
@@ -49,7 +50,7 @@ function AddProduit() {
 
   const [selectVille, setSelectVille] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
-  console.log(selectedCategories);
+  console.log(JSON.stringify(selectedCategories));
   const [loading, setLoading] = useState(false);
 
   const handleUpload = async (e) => {
@@ -57,14 +58,14 @@ function AddProduit() {
 
     const formdata = new FormData();
     formdata.append("image", image);
-
     formdata.append("nom", nom);
     formdata.append("description", description);
     formdata.append("prix", prix);
     formdata.append("prix_promo", prix_promo);
     formdata.append("categories", JSON.stringify(selectedCategories));
+    formdata.append("category", category);
     formdata.append("status", status);
-    formdata.append("genre", genre);
+    formdata.append("genre", selectedGenres);
     formdata.append("qty", qty);
     formdata.append("size_shoes", size_shoes);
     formdata.append("size_quantity", size_quantity);
@@ -97,6 +98,17 @@ function AddProduit() {
     }
   };
 
+  const genres = [
+    { value: "homme", label: "Homme" },
+    { value: "femme", label: "Femme" },
+    { value: "enfants", label: "Enfants" },
+  ];
+  const handleChangeGenres = (selectedOptions) => {
+    const selectedValues = selectedOptions
+      .map((option) => option.value)
+      .join(", ");
+    setSelectedGenres(selectedValues);
+  };
   const handleFileChange = (event) => {
     const newImage = event.target.files[0]; // Get the first selected file
     if (selectedFiles.length > 2) {
@@ -185,6 +197,8 @@ function AddProduit() {
     const value = e.map((option) => option.label);
     setSelectVille(value);
     setSelectedCategories(e);
+    const selectedValues = e.map((option) => option.value).join(", ");
+    setCategory(selectedValues);
   };
   const handleRemoveOption = (removedValue) => {};
 
@@ -264,14 +278,25 @@ function AddProduit() {
                 components={{ MultiValue: customMultiValue }}
               />
             </div>
+            <div className="flex flex-col items-center">
+              <span className="text-black font-bold">Genre(s) :</span>
+              <SelectOpt
+                className="Options"
+                options={genres}
+                isMulti
+                onChange={handleChangeGenres}
+                components={{ MultiValue: customMultiValue }}
+              />
+            </div>
             <Box sx={{ ml: 2, minWidth: 220 }}>
               <FormControl sx={{ minWidth: 220 }}>
                 <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
                   Status:
                 </label>{" "}
                 <Select value={status} onChange={handleSelectStatus}>
-                  <MenuItem value="new">Online</MenuItem>
-                  <MenuItem value="old">Draft</MenuItem>
+                  <MenuItem value="new">New</MenuItem>
+                  <MenuItem value="latest-arrival">Latest Arrival</MenuItem>
+                  <MenuItem value="release">Release</MenuItem>
                 </Select>
               </FormControl>
             </Box>
@@ -350,7 +375,7 @@ function AddProduit() {
 
                 {image ? (
                   <img
-                    className="rounded-full"
+                    className="w-[150px] h-[150px] rounded-full border-2 border-gray-400"
                     src={image && URL.createObjectURL(image)}
                     width={150}
                     height={150}
