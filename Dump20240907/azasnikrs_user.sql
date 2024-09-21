@@ -16,30 +16,31 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `customer`
+-- Table structure for table `user`
 --
 
-DROP TABLE IF EXISTS `customer`;
+DROP TABLE IF EXISTS `user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `customer` (
+CREATE TABLE `user` (
   `id` int NOT NULL AUTO_INCREMENT,
-  `firstName` varchar(245) DEFAULT NULL,
-  `lastName` varchar(245) DEFAULT NULL,
-  `email` varchar(245) DEFAULT NULL,
-  `password` varchar(245) DEFAULT NULL,
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` varchar(255) NOT NULL,
+  `firstName` varchar(255) NOT NULL,
+  `lastName` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `customer`
+-- Dumping data for table `user`
 --
 
-LOCK TABLES `customer` WRITE;
-/*!40000 ALTER TABLE `customer` DISABLE KEYS */;
-INSERT INTO `customer` VALUES (1,'jkdkdk','jwsjsjj','admin.nabil@gmail.com','$2b$10$l8UqTfO8XdTEfJzRK.pVeOt.WgJXZ4sTx7o4hMOVhP.QRNvCQsKNW'),(2,'kadrioui','jamal','jamal.kadrioui@gmail.com','$2b$10$b6Cokzb0EIlITObI9TOC7.aCdVmWc3ug6ScJDtfPbcEDJQ19bEr5W');
-/*!40000 ALTER TABLE `customer` ENABLE KEYS */;
+LOCK TABLES `user` WRITE;
+/*!40000 ALTER TABLE `user` DISABLE KEYS */;
+INSERT INTO `user` VALUES (1,'medeva.solutions@gmail.com','$2b$10$eAi02yBx/i2boN4Mc/GP/e8qSal5zujDc.Ok0zH5gh2piFGBtbnNK','Super-Admin','','');
+/*!40000 ALTER TABLE `user` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -51,4 +52,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-07-08 13:19:38
+-- Dump completed on 2024-09-07 16:07:35

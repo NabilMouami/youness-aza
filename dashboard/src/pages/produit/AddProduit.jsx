@@ -21,7 +21,7 @@ import { RiCloseLargeFill } from "react-icons/ri";
 
 function AddProduit() {
   const [selectedGenres, setSelectedGenres] = useState("");
-  const [genre, setSelectGenre] = useState("homme");
+  const [type, setSelectType] = useState("0");
   const [categories, setCategories] = useState([]);
   const [category, setCategory] = useState("");
   console.log(category);
@@ -29,6 +29,8 @@ function AddProduit() {
   const [qty, setQty] = useState(0);
   const [quantity, setQuantity] = useState("");
   const [nom, setNom] = useState("");
+  const [productSlug, setProductSlug] = useState("");
+
   const [prix, setPrix] = useState("");
   const [prix_promo, setPrixPromo] = useState(0);
   const [items, setItems] = useState([]); // Array to store list items
@@ -59,6 +61,7 @@ function AddProduit() {
     const formdata = new FormData();
     formdata.append("image", image);
     formdata.append("nom", nom);
+    formdata.append("productSlug", productSlug);
     formdata.append("description", description);
     formdata.append("prix", prix);
     formdata.append("prix_promo", prix_promo);
@@ -66,6 +69,7 @@ function AddProduit() {
     formdata.append("category", category);
     formdata.append("status", status);
     formdata.append("genre", selectedGenres);
+    formdata.append("type", type);
     formdata.append("qty", qty);
     formdata.append("size_shoes", size_shoes);
     formdata.append("size_quantity", size_quantity);
@@ -97,7 +101,17 @@ function AddProduit() {
       console.error("Error:", error);
     }
   };
-
+  const convertToSlug = (name) => {
+    return name
+      .toLowerCase() // Convert to lowercase
+      .replace(/ /g, "-") // Replace spaces with hyphens
+      .replace(/[^\w-]+/g, ""); // Remove special characters
+  };
+  const handleNameChange = (e) => {
+    const name = e.target.value;
+    setNom(name);
+    setProductSlug(convertToSlug(name));
+  };
   const genres = [
     { value: "homme", label: "Homme" },
     { value: "femme", label: "Femme" },
@@ -137,8 +151,8 @@ function AddProduit() {
   const handleSelectStatus = (e) => {
     setSelectStatus(e.target.value);
   };
-  const handleSelectGenre = (e) => {
-    setSelectGenre(e.target.value);
+  const handleSelectType = (e) => {
+    setSelectType(e.target.value);
   };
 
   // Add List Of Numero Shoes (Sizes)
@@ -160,7 +174,7 @@ function AddProduit() {
 
   useEffect(() => {
     axios
-      .get(`${config_url}/api/categories`)
+      .get(`${config_url}/api/collections`)
       .then((res) => {
         if (Array.isArray(res.data)) {
           setCategories(res.data);
@@ -241,8 +255,20 @@ function AddProduit() {
                 className="appearance-none block w-full bg-white text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:border-sky-500"
                 type="text"
                 name="nom"
-                onChange={(e) => setNom(e.target.value)}
+                onChange={handleNameChange}
                 placeholder="Nom:"
+              />
+            </div>
+            <div className="w-90 px-3 mb-6 md:mb-0">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Product Slug (automatic):
+              </label>
+              <input
+                className="appearance-none block w-full bg-white text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:border-sky-500"
+                type="text"
+                value={productSlug}
+                readOnly
+                placeholder="Generated product slug"
               />
             </div>
             <div className="w-90 px-3 mb-6 md:mb-0">
@@ -269,7 +295,7 @@ function AddProduit() {
             </div>
 
             <div className="flex flex-col items-center">
-              <span className="text-black font-bold">Categorie :</span>
+              <span className="text-black font-bold">Collections :</span>
               <SelectOpt
                 className="Options"
                 options={selOptions}
@@ -303,12 +329,11 @@ function AddProduit() {
             <Box sx={{ ml: 2, minWidth: 220 }}>
               <FormControl sx={{ minWidth: 220 }}>
                 <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
-                  Genre:
+                  Type:
                 </label>{" "}
-                <Select value={genre} onChange={handleSelectGenre}>
-                  <MenuItem value="homme">Homme</MenuItem>
-                  <MenuItem value="femme">Femme</MenuItem>
-                  <MenuItem value="enfant">Enfant</MenuItem>
+                <Select value={type} onChange={handleSelectType}>
+                  <MenuItem value="0">Snikears</MenuItem>
+                  <MenuItem value="1">Accessoires</MenuItem>
                 </Select>
               </FormControl>
             </Box>

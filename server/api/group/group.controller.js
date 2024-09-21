@@ -2,6 +2,7 @@ const {
   createGroupe,
   getGroupes,
   AffectProuductsToGroupe,
+  deleteGroupe,
 } = require("./group.service");
 
 module.exports = {
@@ -44,6 +45,25 @@ module.exports = {
         return;
       }
       return res.status(200).json(results);
+    });
+  },
+  deleteGrp: (req, res) => {
+    const id = req.params.id;
+    deleteGroupe(id, (err, results) => {
+      if (err) {
+        console.log(err);
+        return;
+      }
+      if (!results) {
+        return res.json({
+          success: 0,
+          message: "Record Not Found",
+        });
+      }
+      return res.json({
+        success: 1,
+        message: "Groupe deleted successfully",
+      });
     });
   },
 };

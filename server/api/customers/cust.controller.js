@@ -94,14 +94,20 @@ module.exports = {
 
         const balance = balanceResults.balance;
         const coinsPending = balanceResults.coins_pending;
+        const deliveryDate = balanceResults.delivery_date;
 
-        console.log("Balance:" + balance + ",Coins Pending:", coinsPending);
+        console.log(
+          "Balance:" + balance + ",Coins Pending:",
+          coinsPending + ",Last Delivery Date:",
+          deliveryDate
+        );
 
         const result = compareSync(body.password, results.password);
         if (result) {
           results.password = undefined;
           results.balance = balance;
           results.coins_pending = coinsPending;
+          results.delivery_date = deliveryDate;
           const jsontoken = sign({ result: results }, "customeryazasneackers", {
             expiresIn: "8h",
           });

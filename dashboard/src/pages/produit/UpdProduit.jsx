@@ -2,6 +2,8 @@ import React, { useState, Fragment, useEffect } from "react";
 import axios from "axios";
 import Chip from "@mui/material/Chip";
 import Paper from "@mui/material/Paper";
+import Button from "@mui/material/Button";
+
 import { styled } from "@mui/material/styles";
 import ClipLoader from "react-spinners/ClipLoader";
 
@@ -11,10 +13,11 @@ import { config_url } from "../../config";
 import SelectOpt from "react-select";
 
 import { toast } from "react-toastify";
-import { MdCloudUpload, MdDelete, MdEditDocument } from "react-icons/md";
+import { MdCloudUpload, MdDelete, MdEditDocument, MdAdd } from "react-icons/md";
 import { AiFillFileImage } from "react-icons/ai";
 import { RiCloseLargeFill } from "react-icons/ri";
 import UpdCategories from "./UpdCategories";
+import UpdGroupProd from "./UpdGroupProd";
 
 const ListItem = styled("li")(({ theme }) => ({
   margin: theme.spacing(0.5),
@@ -25,16 +28,21 @@ function UpdProduit() {
   const { Col } = Detail;
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [groupes, setGroupes] = useState([]);
   const [selectVille, setSelectVille] = useState("");
   const [categoryArray, setCategoryArray] = useState(
     Col.category_names.split(", ") || []
   );
-  console.log(categoryArray);
   const [showSpinner, setShowSpinner] = useState(true);
 
   const [showSelectCategories, setShowSelectCategories] = useState(false);
+  const [showSelectGroupes, setShowSelectGroupes] = useState(false);
+  const [group_id, setGroupId] = useState("");
+
   const [category, setSelectCategory] = useState(Col.category);
   const [nom, setNom] = useState(Col.name);
+  const [productSlug, setProductSlug] = useState(Col.name_by_filtered);
+
   const [description, setDescription] = useState(Col.description);
   const [prix, setPrix] = useState(Col.price);
   const [prix_promo, setPrixPromo] = useState(Col.price_promo);
@@ -47,10 +55,21 @@ function UpdProduit() {
   const [fileName, setFileName] = useState("No selected file");
   const [disable_uploas_images, setDisableImages] = useState(true);
   const [changer_images, setChangerImages] = useState(false);
+  const [changer_categories, setChangerCategories] = useState(false);
+  const [changer_groupes, setChangerGroupes] = useState(false);
+  const [affectedCategories, setAffectedCategories] = useState([]);
+  const [affectedCategoriesIds, setAffectedCategoriesIds] = useState([]);
+  console.log(affectedCategoriesIds);
+
   const [file_image, setFileImage] = useState(null);
 
   const [selectedFiles, setSelectedFiles] = useState(Col.images);
-
+  useEffect(() => {
+    if (affectedCategories) {
+      const updatedProductList = affectedCategories?.map((option) => option.id);
+      setAffectedCategoriesIds(updatedProductList);
+    }
+  }, [affectedCategories]);
   const handleUpload = async (e) => {
     e.preventDefault();
 
@@ -59,12 +78,19 @@ function UpdProduit() {
     formdata.append("oldimage", oldImage);
     formdata.append("upload_image", upload_image);
     formdata.append("nom", nom);
+    formdata.append("productSlug", productSlug);
+
     formdata.append("description", description);
 
     formdata.append("prix", prix);
     formdata.append("prix_promo", prix_promo);
     formdata.append("out_of_stock", out_of_stock);
     formdata.append("category", categoryArray);
+    formdata.append("changed_category", changer_categories);
+    formdata.append("changed_groupe", changer_groupes);
+    formdata.append("groupe_id", group_id);
+
+    formdata.append("affected_categories", affectedCategoriesIds);
 
     try {
       const response = await axios.put(
@@ -126,7 +152,7 @@ function UpdProduit() {
   }
   useEffect(() => {
     axios
-      .get(`${config_url}/api/categories`)
+      .get(`${config_url}/api/collections`)
       .then((res) => {
         if (Array.isArray(res.data)) {
           setCategories(res.data);
@@ -142,6 +168,23 @@ function UpdProduit() {
       });
   }, []);
 
+  useEffect(() => {
+    axios
+      .get(`${config_url}/api/groupes`)
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setGroupes(res.data);
+        } else {
+          console.error(
+            "Invalid data structure received for categories:",
+            res.data
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching categories:", error);
+      });
+  }, []);
   const handleDelete = (chipToDelete) => async () => {
     await setCategoryArray((chips) =>
       chips.filter((chip) => chip !== chipToDelete)
@@ -152,7 +195,17 @@ function UpdProduit() {
     //   window.location.reload(false);
     // }, "2000");
   };
-
+  const convertToSlug = (name) => {
+    return name
+      .toLowerCase() // Convert to lowercase
+      .replace(/ /g, "-") // Replace spaces with hyphens
+      .replace(/[^\w-]+/g, ""); // Remove special characters
+  };
+  const handleNameChange = (e) => {
+    const name = e.target.value;
+    setNom(name);
+    setProductSlug(convertToSlug(name));
+  };
   const handleSelectOutOfStock = (e) => {
     setOut(e.target.value);
   };
@@ -178,6 +231,7 @@ function UpdProduit() {
       console.error("Error:", error);
     }
   };
+  //Options Colections
   const selOptions = [];
   const ids = categories?.map((o) => o.name);
   const filtered = categories?.filter(
@@ -194,14 +248,43 @@ function UpdProduit() {
     }
   }
 
+  //Options Groupes
+  const selOptionsGroupes = [];
+  const id_groupes = groupes?.map((o) => o.name);
+  const filtered_groupe = groupes?.filter(
+    ({ name }, index) => !id_groupes?.includes(name, index + 1)
+  );
+
+  for (let i = 0; i < filtered_groupe.length; i++) {
+    if (filtered.length > 0) {
+      selOptionsGroupes.push({
+        value: filtered_groupe[i].name,
+        label: filtered_groupe[i].name,
+        id: filtered_groupe[i].id,
+      });
+    }
+  }
   const handle = (e) => {
-    console.log(e);
     const value = e.map((option) => option.label);
     setSelectVille(value);
     setSelectedCategories(e);
-    setCategoryArray([...categoryArray, value]);
+    setChangerCategories(true);
+    setAffectedCategories(e);
   };
-  const handleRemoveOption = (removedValue) => {};
+
+  const handleGroupe = (e) => {
+    console.log(e.id);
+    setChangerGroupes(true);
+
+    setGroupId(e.id);
+  };
+
+  const handleRemoveOption = (removedValue) => {
+    const updatedSelectedOptions = affectedCategories.filter(
+      (option) => option.id !== removedValue
+    );
+    setAffectedCategories(updatedSelectedOptions);
+  };
 
   const customMultiValue = (props) => (
     <div className="flex gap-2 ml-2 font-bold">
@@ -209,7 +292,7 @@ function UpdProduit() {
       <button
         onClick={(e) => {
           props.removeProps.onClick();
-          handleRemoveOption(props.data.label);
+          handleRemoveOption(props.data.id);
         }}
         className="w-8 h-8 rounded-full text-black p-1 bg-red-400"
       >
@@ -238,8 +321,20 @@ function UpdProduit() {
                 type="text"
                 defaultValue={nom}
                 name="nom"
-                onChange={(e) => setNom(e.target.value)}
+                onChange={handleNameChange}
                 placeholder="Name:"
+              />
+            </div>
+            <div className="w-90 px-3 mb-6 md:mb-0">
+              <label className="block text-gray-700 text-sm font-bold mb-2">
+                Product Slug (automatic):
+              </label>
+              <input
+                className="appearance-none block w-full bg-white text-gray-700 border border-gray-200 rounded py-3 px-4 leading-tight focus:outline-none focus:border-sky-500"
+                type="text"
+                value={productSlug}
+                readOnly
+                placeholder="Generated product slug"
               />
             </div>
             <div className="w-90 px-3 mb-6 md:mb-0">
@@ -269,27 +364,80 @@ function UpdProduit() {
               />
             </div>
           </div>
-          <div className="flex justify-center items-center">
-            {showSelectCategories && (
-              <>
-                {showSpinner ? (
-                  <ClipLoader loading={showSpinner} size={10} />
-                ) : (
-                  <div className="flex flex-col items-center">
-                    <span className="text-black font-bold">Categorie :</span>
-                    <SelectOpt
-                      className="Options"
-                      options={selOptions}
-                      isMulti
-                      onChange={handle}
-                      components={{ MultiValue: customMultiValue }}
-                    />
-                  </div>
-                )}
-              </>
-            )}
+          <div className="bg-gray-300 rounded-2xl">
+            <h1>Collections</h1>
+            <div className="flex items-center justify-center gap-4  p-20">
+              <div className="flex flex-wrap">
+                <div className="flex flex-col gap-4">
+                  <Button
+                    onClick={() => setShowSelectCategories(true)}
+                    variant="contained"
+                    endIcon={<MdAdd />}
+                  >
+                    Affect Collection(s) To Product
+                  </Button>
+                  {showSelectCategories && (
+                    <div>
+                      {showSpinner ? (
+                        <ClipLoader loading={showSpinner} size={20} />
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <span className="text-black font-bold">
+                            Collections :
+                          </span>
+                          <SelectOpt
+                            className="Options"
+                            options={selOptions}
+                            isMulti
+                            onChange={handle}
+                            components={{ MultiValue: customMultiValue }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <UpdCategories />
+            </div>
+          </div>
 
-            <UpdCategories />
+          <div className="bg-gray-300 rounded-2xl">
+            <h1>Groupes Product</h1>
+            <div className="flex items-center justify-center gap-4  p-20">
+              <div className="flex flex-wrap">
+                <div className="flex flex-col gap-4">
+                  <Button
+                    onClick={() => setShowSelectGroupes(true)}
+                    variant="contained"
+                    endIcon={<MdAdd />}
+                  >
+                    Affect Product To Group
+                  </Button>
+                  {showSelectGroupes && (
+                    <div>
+                      {showSpinner ? (
+                        <ClipLoader loading={showSpinner} size={20} />
+                      ) : (
+                        <div className="flex flex-col items-center">
+                          <span className="text-black font-bold">
+                            Groupes :
+                          </span>
+                          <SelectOpt
+                            className="Options"
+                            options={selOptionsGroupes}
+                            onChange={handleGroupe}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <UpdGroupProd />
+            </div>
+          </div>
+          <div className="flex justify-center items-center">
             <div className="w-90 flex flex-col items-center px-3">
               <label className="ml-12 mb-2 block text-lg font-bold text-black">
                 Out Of Stock:

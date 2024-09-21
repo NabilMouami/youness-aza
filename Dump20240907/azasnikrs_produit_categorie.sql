@@ -27,8 +27,8 @@ CREATE TABLE `produit_categorie` (
   `categorie_id` int NOT NULL,
   PRIMARY KEY (`produit_id`,`categorie_id`),
   KEY `categorie_id_idx` (`categorie_id`),
-  CONSTRAINT `categorie_id` FOREIGN KEY (`categorie_id`) REFERENCES `categorie` (`id`),
-  CONSTRAINT `produit_id` FOREIGN KEY (`produit_id`) REFERENCES `produit` (`id`)
+  CONSTRAINT `categorie_id` FOREIGN KEY (`categorie_id`) REFERENCES `categorie` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `produit_id` FOREIGN KEY (`produit_id`) REFERENCES `produit` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -38,7 +38,7 @@ CREATE TABLE `produit_categorie` (
 
 LOCK TABLES `produit_categorie` WRITE;
 /*!40000 ALTER TABLE `produit_categorie` DISABLE KEYS */;
-INSERT INTO `produit_categorie` VALUES (7,1),(9,1),(11,1),(12,1),(13,1),(27,1),(2,2),(4,2),(14,2),(3,3),(10,3),(27,3);
+INSERT INTO `produit_categorie` VALUES (7,1),(9,1),(11,1),(12,1),(13,1),(30,1),(32,1),(2,2),(4,2),(14,2),(28,2),(29,2),(30,2),(31,2),(32,2),(3,3),(10,3),(27,3),(3,8);
 /*!40000 ALTER TABLE `produit_categorie` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -51,4 +51,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-07-08 13:19:39
+-- Dump completed on 2024-09-07 16:07:35

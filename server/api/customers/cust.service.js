@@ -124,7 +124,7 @@ module.exports = {
   },
   getTotalCoinsCustomer: (customer_id, callBack) => {
     db.query(
-      `select balance,coins_pending from coins where customer_id = ?`,
+      `select balance,coins_pending,delivery_date from coins where customer_id = ?`,
       [customer_id],
       (error, results, fields) => {
         if (error) {

@@ -299,6 +299,68 @@ function updateProductQuantity(productId, shoeSize, qtyToDecrease) {
   );
 }
 
+function increaseProductQuantity(productId, shoeSize, qtyToDecrease) {
+  // Get the index of the shoeSize in nemuro_shoes array
+  const queryGetIndexAndQty = `
+    SELECT 
+      JSON_UNQUOTE(JSON_SEARCH(nemuro_shoes, 'one', ?)) as ind,
+      JSON_UNQUOTE(JSON_EXTRACT(qty, JSON_UNQUOTE(JSON_SEARCH(nemuro_shoes, 'one', ?)))) as currentQty
+    FROM produit 
+    WHERE id = ?
+  `;
+
+  db.query(
+    queryGetIndexAndQty,
+    [shoeSize, shoeSize, productId],
+    (err, result) => {
+      if (err) {
+        console.error("Error fetching index and current quantity:", err);
+        return;
+      }
+
+      const indexPath = result[0]?.ind;
+      const currentQty = parseInt(result[0]?.currentQty, 10);
+
+      if (indexPath && !isNaN(currentQty)) {
+        // Extract the actual index number from the path
+        const indexMatch = indexPath.match(/\[(\d+)\]$/);
+        const index = indexMatch ? indexMatch[1] : null;
+
+        if (index !== null) {
+          // Calculate the new quantity by subtracting qtyToDecrease
+          const newQty = currentQty + qtyToDecrease;
+          console.log("newQty are you want to updated:", String(newQty));
+          if (newQty >= 0) {
+            // Update the quantity for the specific shoe size
+            const queryUpdateQty = `
+            UPDATE produit
+  SET qty = JSON_SET(qty, ?, CAST(? AS CHAR))
+            WHERE id = ?
+          `;
+
+            db.query(
+              queryUpdateQty,
+              [`$[${index}]`, String(newQty), productId],
+              (err, result) => {
+                if (err) {
+                  console.error("Error updating quantity:", err);
+                  return;
+                }
+                console.log("Product quantity updated successfully.");
+              }
+            );
+          } else {
+            console.log("Cannot decrease quantity below zero.");
+          }
+        } else {
+          console.log("Failed to extract index from path:", indexPath);
+        }
+      } else {
+        console.log("Shoe size not found or current quantity is invalid.");
+      }
+    }
+  );
+}
 module.exports = {
   createOrder: (data, callBack) => {
     const now = new Date();
@@ -408,39 +470,39 @@ module.exports = {
   getOrders: (callBack) => {
     db.query(
       `SELECT
-    nom_client,
-    custom_id,
-    ville,
-    telephone,
-    email,
-    adresse,
-    code_postal,
-    order_status,
-    payment_status,
-    delivery_status,
-    date_order,
-    order_num,
-    coins_payed,
-    SUM(total_price) AS total_price_sum,
-    SUM(orders.qty) AS sum_qty
-FROM
-    orders
-GROUP BY
-    nom_client,
-    custom_id,
-    ville,
-    telephone,
-    email,
-    adresse,
-    code_postal,
-    order_status,
+      nom_client,
+      custom_id,
+      ville,
+      telephone,
+      email,
+      adresse,
+      code_postal,
+      order_status,
       payment_status,
-    delivery_status,
-    date_order,
-    order_num,
-    coins_payed
-
-    ;`,
+      delivery_status,
+      date_order,
+      order_num,
+      coins_payed,
+      SUM(total_price) AS total_price_sum,
+      SUM(orders.qty) AS sum_qty
+    FROM
+      orders
+    GROUP BY
+      nom_client,
+      custom_id,
+      ville,
+      telephone,
+      email,
+      adresse,
+      code_postal,
+      order_status,
+      payment_status,
+      delivery_status,
+      date_order,
+      order_num,
+      coins_payed
+    ORDER BY
+      order_num DESC;`,
       [],
       (error, results, fields) => {
         if (error) {
@@ -450,6 +512,7 @@ GROUP BY
       }
     );
   },
+
   // Orders In Page statistics Dashboard:
   getOrdersStatistics: (callBack) => {
     db.query(
@@ -676,21 +739,32 @@ GROUP BY
       console.log(result);
       sendOrderEmailToCustomer(data);
       createCoins(data);
-      decreaseBalanceCoins({
-        customer_id: data.custom_id,
-        coins_paid: data.coins_payed,
-      });
+      // decreaseBalanceCoins({
+      //   customer_id: data.custom_id,
+      //   coins_paid: data.coins_payed,
+      // });
       return callBack(null, result);
     });
   },
   annulerOrder: async (data, callBack) => {
-    console.log(data);
-    await sendCanceledOrderToCustomer(data);
-    if (data.items && Array.isArray(data.infos)) {
-      console.log("I am  decreased quantity!!");
-      data.infos.forEach((item) => {
-        updateProductQuantity(item.productId, item.productSize, 1);
-      });
+    try {
+      console.log(data);
+      await sendCanceledOrderToCustomer(data);
+
+      if (data.infos && Array.isArray(data.infos)) {
+        // Update delivery status to "CANCEL" in the database
+        const updateQuery = `UPDATE orders SET delivery_status = 'CANCEL' WHERE order_num = ?`;
+
+        // Assuming `data.orderId` contains the order ID to update
+        await db.query(updateQuery, [data.order_num]);
+        console.log("I am increasing quantity!!");
+        data.infos.forEach((item) => {
+          increaseProductQuantity(item.productId, item.productSize, 1);
+        });
+      }
+      callBack(null, { status: 200, message: "Order cancelled successfully" });
+    } catch (error) {
+      callBack(error);
     }
   },
 

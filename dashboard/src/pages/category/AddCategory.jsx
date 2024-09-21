@@ -2,20 +2,15 @@ import React, { useState, Fragment, useEffect } from "react";
 import { config_url } from "../../config";
 import axios from "axios";
 import { toast } from "react-toastify";
-import {
-  MdCloudUpload,
-  MdDelete,
-  MdOutlineFilter,
-  MdOutlineSend,
-  MdDeleteForever,
-} from "react-icons/md";
+import { MdCloudUpload, MdDelete, MdOutlineSend } from "react-icons/md";
 import { AiFillFileImage } from "react-icons/ai";
-import { RiCloseLargeFill } from "react-icons/ri";
-
+import Box from "@mui/material/Box";
+import TextField from "@mui/material/TextField";
 function AddCategory() {
   const [name_category, setName] = useState("");
   const [image_categoty, setImage] = useState("");
   const [meta_image_category, setMetaImage] = useState("");
+  const [meta_image_description, setMetaImageDescription] = useState("");
   const [fileName, setFileName] = useState("No selected file");
   const [loading, setLoading] = useState(false);
   const handleUpload = async (e) => {
@@ -25,6 +20,7 @@ function AddCategory() {
     formdata.append("image_category", image_categoty);
     formdata.append("name_category", name_category);
     formdata.append("meta_image_category", meta_image_category);
+    formdata.append("meta_image_description", meta_image_description);
 
     try {
       const response = await axios.post(
@@ -40,6 +36,7 @@ function AddCategory() {
         toast.success("Ajoute Produit Success !!", {
           position: "top-right",
         });
+      console.log(response);
       setLoading(false);
     } catch (error) {
       console.error("Error:", error);
@@ -100,7 +97,7 @@ function AddCategory() {
 
                 {image_categoty ? (
                   <img
-                    className="rounded-full"
+                    className="w-[150px] h-[150px] rounded-full border-2 border-gray-400"
                     src={image_categoty && URL.createObjectURL(image_categoty)}
                     width={150}
                     height={150}
@@ -124,6 +121,19 @@ function AddCategory() {
                   placeholder="Meta Image:"
                 />
               </div>
+              <div className="ml-10 w-90">
+                <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
+                  Meta Description For Seo:
+                </label>{" "}
+                <textarea
+                  type="text"
+                  onChange={(e) => setMetaImageDescription(e.target.value)}
+                  className="resize rounded-md border-2 border-solid border-gray-200 focus:outline-none focus:border-sky-400"
+                  rows="10"
+                  cols="80"
+                ></textarea>
+              </div>
+
               <section className="uploaded-row">
                 <AiFillFileImage color="#1475cf" />
                 <span className="upload-content">

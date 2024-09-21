@@ -43,41 +43,47 @@ const Nav = ({ children }) => {
       key: 2,
     },
     {
+      url: "/app/list-collections",
+      i_class: "bx bx-purchase-tag-alt",
+      link_title: "Collections",
+      key: 3,
+    },
+    {
       url: "/app/list-categories",
       i_class: "bx bx-purchase-tag-alt",
       link_title: "Categoies",
-      key: 3,
+      key: 4,
     },
     {
       url: "/app/list-blogs",
       i_class: "bx bxs-book-content",
       link_title: "Blogs",
-      key: 4,
+      key: 5,
     },
     {
-      url: "/app/ajoute-produit-to-group",
+      url: "/app/list-groupes",
       i_class: "bx bx-link",
-      link_title: "Relation Products",
-      key: 5,
+      link_title: "Groupe Products",
+      key: 6,
     },
 
     {
       url: "/app/hiden-produits",
       i_class: "bx bxs-low-vision",
       link_title: "Hiden Produits",
-      key: 6,
+      key: 7,
     },
     {
       url: "clients",
       i_class: "bx bx-smile ",
       link_title: "Clients",
-      key: 7,
+      key: 8,
     },
     {
       url: "utilisateurs",
       i_class: "bx bxs-user ",
       link_title: "Users",
-      key: 8,
+      key: 9,
     },
   ];
 

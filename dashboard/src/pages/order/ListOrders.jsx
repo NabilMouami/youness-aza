@@ -1,8 +1,7 @@
 import { Fragment, useState, useEffect } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
 import { config_url } from "../../config";
 import FormGroup from "@mui/material/FormGroup";
 import FormControlLabel from "@mui/material/FormControlLabel";
@@ -16,9 +15,8 @@ import axios from "axios";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
 import Stack from "@mui/material/Stack";
-import Button from "@mui/material/Button";
 import Swal from "sweetalert2";
-import { RiDeleteBin6Fill, RiEdit2Line, RiEyeLine } from "react-icons/ri";
+import { RiEyeLine } from "react-icons/ri";
 import { Tooltip } from "@mui/material";
 
 import { detailsProduct } from "../../slices/detailsProduct";
@@ -77,10 +75,6 @@ function ListOrders() {
       }
     });
   }
-  const openModal = (row) => {
-    setIsModalOpen(true);
-    setRowOrder(row);
-  };
 
   const closeModal = () => {
     setIsModalOpen(false);
@@ -235,39 +229,13 @@ function ListOrders() {
       width: 220,
       renderCell: (params) => {
         return (
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex">
             <div className="flex items-center">
               <Tooltip title="Informations About Order" placement="top">
                 <div className="mt-2">
                   <RiEyeLine
                     className="collabListEdit"
                     onClick={() => detailsProd(params.row)}
-                  />
-                </div>
-              </Tooltip>
-            </div>
-            <div className="flex items-center">
-              <Tooltip title="Change Info Order" placement="top">
-                <div className="mt-2">
-                  <RiEdit2Line
-                    className="collabListEdit"
-                    onClick={() => openModal(params.row)}
-                  />
-                </div>
-              </Tooltip>
-            </div>
-            <div className="flex items-center">
-              <Tooltip title="Delete Order" placement="top">
-                <div className="mt-2">
-                  <RiDeleteBin6Fill
-                    className="collabListDelete"
-                    onClick={() => {
-                      popup(
-                        params.row.order_num,
-                        params.row.nom_client,
-                        params.row.date_order
-                      );
-                    }}
                   />
                 </div>
               </Tooltip>
@@ -320,9 +288,9 @@ function ListOrders() {
               <FormControlLabel
                 control={
                   <Checkbox
-                    checked={filters.payment_status === "paidOnline"}
+                    checked={filters.payment_status === "Paid-Online"}
                     onChange={handleFilterChange}
-                    name="payment_status.paidOnline"
+                    name="payment_status.Paid-Online"
                   />
                 }
                 label="Paid-Online"
@@ -403,6 +371,16 @@ function ListOrders() {
                   />
                 }
                 label="DELIVERED"
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={filters.delivery_status === "cancel"}
+                    onChange={handleFilterChange}
+                    name="delivery_status.cancel"
+                  />
+                }
+                label="CANCELED"
               />
             </FormGroup>
           </div>

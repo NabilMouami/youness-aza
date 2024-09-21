@@ -40,7 +40,10 @@ const style = {
 };
 
 function ListBlogs() {
-  const [categories, setCategories] = useState([]);
+  const [blogs, setBlogs] = useState([]);
+  console.log(blogs);
+  const [collections, setCollections] = useState([]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rowCategory, setRowCategory] = useState({});
   const [open, setOpen] = React.useState(false);
@@ -52,7 +55,7 @@ function ListBlogs() {
       .get(`${config_url}/api/blogs`)
       .then((res) => {
         if (Array.isArray(res.data)) {
-          setCategories(res.data);
+          setBlogs(res.data);
         } else {
           console.error(
             "Invalid data structure received for categories:",
@@ -64,13 +67,30 @@ function ListBlogs() {
         console.error("Error fetching categories:", error);
       });
   }, []);
+  useEffect(() => {
+    axios
+      .get(`${config_url}/api/collections`)
+      .then((res) => {
+        if (Array.isArray(res.data)) {
+          setCollections(res.data);
+        } else {
+          console.error(
+            "Invalid data structure received for categories:",
+            res.data
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching collections:", error);
+      });
+  }, []);
 
   const deleteCategory = (id, image) => {
     axios.post(`${config_url}/api/blog/${id}`, { image: image }).then(() => {
-      setCategories(categories.filter((row) => row.id !== id));
+      setBlogs(blogs.filter((row) => row.id !== id));
     });
   };
-  function popup(id, fname, image) {
+  function popup(id, image) {
     Swal.fire({
       title: "Êtes vous sûr?",
       text: "Vous ne pourrez pas revenir en arrière!",
@@ -79,7 +99,7 @@ function ListBlogs() {
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
       cancelButtonText: "Annuler",
-      confirmButtonText: "Oui, supprimez Blog : " + fname + " ",
+      confirmButtonText: "Oui, supprimez Blog",
     }).then((result) => {
       if (result.isConfirmed) {
         deleteCategory(id, image);
@@ -102,7 +122,13 @@ function ListBlogs() {
   return (
     <Fragment>
       {isModalOpen && (
-        <UpdBlog closeModal={closeModal} rowCategory={rowCategory} />
+        <UpdBlog
+          closeModal={closeModal}
+          rowCategory={rowCategory}
+          collections={collections}
+          blogs={blogs}
+          setBlogs={setBlogs}
+        />
       )}{" "}
       <Modal
         open={open}
@@ -129,6 +155,12 @@ function ListBlogs() {
                   Blog Title{" "}
                 </th>
                 <th className="py-2 px-4 border border-gray-300 bg-gray-200">
+                  Collection{" "}
+                </th>
+                <th className="py-2 px-4 border border-gray-300 bg-gray-200">
+                  Date Creation{" "}
+                </th>
+                <th className="py-2 px-4 border border-gray-300 bg-gray-200">
                   Blog Image
                 </th>
                 <th className="py-2 px-4 border border-gray-300 bg-gray-200">
@@ -141,10 +173,16 @@ function ListBlogs() {
               </tr>
             </thead>
             <tbody>
-              {categories?.map((item) => (
+              {blogs?.map((item) => (
                 <tr key={item.id}>
                   <td className="py-2 px-4 border border-gray-300">
                     {item.title}
+                  </td>
+                  <td className="py-2 px-4 border border-gray-300">
+                    {item.name}
+                  </td>
+                  <td className="py-2 px-4 border border-gray-300">
+                    {item.date_created}
                   </td>
                   <td className="flex items-center justify-center py-2 px-4 border border-gray-300">
                     <img
@@ -162,7 +200,7 @@ function ListBlogs() {
                       <RiDeleteBin6Fill
                         className="collabListDelete"
                         onClick={() => {
-                          popup(item.id, item.name, item.image);
+                          popup(item.id, item.image);
                         }}
                       />
                     </div>

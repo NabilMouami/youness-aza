@@ -28,6 +28,7 @@ function ListProduits() {
   const [categories, setCategories] = useState([]);
   const [selectVille, setSelectVille] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedCollections, setSelectedCollections] = useState([]);
 
   const [disable_button, setDisable] = useState(true);
   const [category, setSelectCategory] = useState("Tous");
@@ -57,7 +58,7 @@ function ListProduits() {
   };
   const hideninstock = (id) => {
     axios
-      .patch(`http://localhost:5000/api/hiden_in_stock/${id}`, {
+      .patch(`${config_url}/api/hiden_in_stock/${id}`, {
         hiden_in_stock: 1,
       })
       .then(() => {
@@ -111,7 +112,7 @@ function ListProduits() {
   const handleOutOfStock = () => {
     console.log(rowSelectionModel);
     axios
-      .put("http://localhost:5000/api/out_of_stock", {
+      .put(`${config_url}/api/out_of_stock`, {
         out_of_stock: rowSelectionModel,
       })
       .then(() => {
@@ -124,21 +125,26 @@ function ListProduits() {
         }, "4000");
       });
   };
-  const handleInStock = () => {
-    axios
-      .put("http://localhost:5000/api/in_stock", {
-        in_stock: rowSelectionModel,
-      })
-      .then(() => {
-        toast.success("Products Available in stock!!", {
-          position: "top-right",
-        });
-        setDisable(true);
-        setTimeout(() => {
-          window.location.reload(false);
-        }, "4000");
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const collectionIds = selectedCollections.map(
+      (collection) => collection.id
+    );
+
+    try {
+      await axios.post(`${config_url}/api/add-products-to-collections`, {
+        prd_ids: rowSelectionModel, // Array of product IDs
+        collection_ids: collectionIds, // Array of selected collection IDs
       });
+
+      alert("Products added to collections successfully!");
+    } catch (error) {
+      console.error("Error adding products to collections:", error);
+    }
   };
+
   const details = (dts) => {
     dispatch(detailsProduct(dts));
     navigate("/app/changer-produit/" + dts.id);
@@ -150,7 +156,7 @@ function ListProduits() {
 
   useEffect(() => {
     axios
-      .get(`${config_url}/api/categories`)
+      .get(`${config_url}/api/collections`)
       .then((res) => {
         if (Array.isArray(res.data)) {
           setCategories(res.data);
@@ -199,28 +205,7 @@ function ListProduits() {
 
     setListFiltred(filtered);
   };
-  const handle = (e) => {
-    console.log(e);
-    const value = e.map((option) => option.label);
-    setSelectVille(value);
-    setSelectedCategories(e);
-  };
-  const handleRemoveOption = (removedValue) => {};
 
-  const customMultiValue = (props) => (
-    <div className="flex gap-2 ml-2 font-bold bg-gray-300 p-1 rounded-full text-xl">
-      <div>{props.data.label}</div>
-      <button
-        onClick={(e) => {
-          props.removeProps.onClick();
-          handleRemoveOption(props.data.label);
-        }}
-        className="w-8 h-8 rounded-full text-black p-1 bg-red-500"
-      >
-        X
-      </button>
-    </div>
-  );
   const columns = [
     {
       field: "name",
@@ -374,34 +359,34 @@ function ListProduits() {
               Ajoute Categorie
             </Button>
           </Link>
+          <Link to="/app/ajoute-collection">
+            <Button variant="outlined" startIcon={<RiAddCircleFill />}>
+              Ajoute Collection
+            </Button>
+          </Link>
         </div>
-        <div className="flex flex-col items-center">
-          <span className="text-black font-bold">Categorie :</span>
-          <SelectOpt
-            className="Options"
-            options={selOptions}
-            isMulti
-            onChange={handle}
-            components={{ MultiValue: customMultiValue }}
-          />
-        </div>
+
         <h1>List Produits:</h1>
         {!disable_button && (
           <div className="flex gap-4 mb-8">
             <button
               disabled={disable_button}
-              className="bg-blue-500 hover:bg-blue-700 text-white font-bold rounded-2xl p-2"
-              onClick={() => handleOutOfStock()}
-            >
-              Out Of Stock
-            </button>
-            <button
-              disabled={disable_button}
               className="bg-red-500 hover:bg-red-700 text-white font-bold rounded-2xl p-2"
-              onClick={() => handleInStock()}
+              onClick={(e) => handleSubmit(e)}
             >
-              In Stock
+              Affecte to collection(s)
             </button>
+            <div className="flex flex-col items-center">
+              <span className="text-black font-bold">Collections :</span>
+              <SelectOpt
+                className="Options"
+                options={selOptions}
+                isMulti
+                value={selectedCollections}
+                onChange={setSelectedCollections}
+                placeholder="Select Collections"
+              />
+            </div>
           </div>
         )}
 

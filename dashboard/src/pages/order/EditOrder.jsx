@@ -283,7 +283,8 @@ function EditOrder() {
               <Typography variant="h3" gutterBottom>
                 Payment
               </Typography>
-              {Col.payment_status === "COD" ? (
+              {Col.payment_status === "COD" ||
+              Col.payment_status === "Paid-Online" ? (
                 <div className="bg-[#FFD35A] flex items-center justify-center p-2 rounded-2xl m-4 gap-8">
                   <AiOutlineFieldTime size={40} />
                   <span className="text-2xl font-bold">Payment pending</span>
@@ -363,6 +364,7 @@ function EditOrder() {
                     </Typography>
                   </Stack>
                 </Box>
+
                 <Box sx={{ p: 2, mt: 2 }}>
                   <Stack
                     direction="row"
@@ -370,11 +372,11 @@ function EditOrder() {
                     alignItems="center"
                   >
                     <Typography gutterBottom variant="h5" component="div">
-                      Balance
+                      Coins Earned:
                     </Typography>
 
                     <Typography gutterBottom variant="h6" component="div">
-                      0.0 Dh
+                      {total / 2.5}
                     </Typography>
                   </Stack>
                 </Box>
@@ -436,6 +438,8 @@ function EditOrder() {
                   Delivery Status:
                 </label>{" "}
                 <Select value={status_dlivery} onChange={handleSelectStatus}>
+                  <MenuItem value="CANCEL">Cancel</MenuItem>
+
                   <MenuItem value="OPEN">Open</MenuItem>
                   <MenuItem value="CONFIRMED">Confirmed</MenuItem>
                   <MenuItem value="IN-TRANSPORT">In Tranport</MenuItem>

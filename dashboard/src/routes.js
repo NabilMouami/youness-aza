@@ -22,6 +22,9 @@ import ListCustomers from "./pages/customer/ListCustomers";
 import CustomerDetailsOrder from "./pages/customer/CustomerDetailsOrder";
 import AddBlog from "./pages/blog/AddBlog";
 import ListBlogs from "./pages/blog/ListBlogs";
+import ListCollections from "./pages/collection/ListCollections";
+import AddCollection from "./pages/collection/AddCollection";
+import ListProdRelGroup from "./pages/produitgroup/ListProdRelGroup";
 export default function Router() {
   return useRoutes([
     {
@@ -38,6 +41,10 @@ export default function Router() {
         { path: "details-produit/:id", element: <DetailsProd /> },
         { path: "ajoute-categorie", element: <AddCategory /> },
         { path: "list-categories", element: <ListCategories /> },
+        { path: "ajoute-collection", element: <AddCollection /> },
+
+        { path: "list-collections", element: <ListCollections /> },
+        { path: "list-groupes", element: <ListProdRelGroup /> },
 
         { path: "ajoute-blog", element: <AddBlog /> },
         { path: "list-blogs", element: <ListBlogs /> },

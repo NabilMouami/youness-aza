@@ -71,7 +71,9 @@ module.exports = {
   createCoins: (data, callBack = () => {}) => {
     console.log(data);
     const { custom_id, amountSpent, infos } = data; // Ensure infos is destructured here
+    console.log(amountSpent);
     let coinsEarned = amountSpent / 2.5;
+    let coinsPending = amountSpent / 2.5;
 
     const expirationDate = new Date();
     expirationDate.setFullYear(expirationDate.getFullYear() + 1);
@@ -97,10 +99,10 @@ module.exports = {
 
           if (deliveryDate && deliveryDate <= oneMonthAgo) {
             // If delivery_date is more than a month ago, add coins_pending to balance and reset coins_pending
-            coinsEarned += existingCoin.coins_pending;
+            coinsEarned = existingCoin.balance + existingCoin.coins_pending;
             db.query(
-              `UPDATE coins SET balance = balance + ?, expiration_date = ?, coins_pending = ?,delivery_date = ? WHERE customer_id = ?`,
-              [coinsEarned, expirationDate, coinsEarned, createdAt, custom_id],
+              `UPDATE coins SET balance = ?, expiration_date = ?, coins_pending = ?,delivery_date = ? WHERE customer_id = ?`,
+              [coinsEarned, expirationDate, coinsPending, createdAt, custom_id],
               (updateError, updateResults) => {
                 if (updateError) {
                   console.error(
@@ -113,15 +115,15 @@ module.exports = {
                 console.log("Coins successfully updated in DB:", updateResults);
 
                 // Update product quantities if infos is provided
-                if (infos && Array.isArray(infos)) {
-                  infos.forEach((item) => {
-                    updateProductQuantity(
-                      item.productId,
-                      item.productSize,
-                      item.qty
-                    );
-                  });
-                }
+                // if (infos && Array.isArray(infos)) {
+                //   infos.forEach((item) => {
+                //     updateProductQuantity(
+                //       item.productId,
+                //       item.productSize,
+                //       item.qty
+                //     );
+                //   });
+                // }
 
                 // Return the update results via the callback
                 return callBack(null, { updateResults });
@@ -144,15 +146,15 @@ module.exports = {
                 console.log("Coins successfully updated in DB:", updateResults);
 
                 // Update product quantities if infos is provided
-                if (infos && Array.isArray(infos)) {
-                  infos.forEach((item) => {
-                    updateProductQuantity(
-                      item.productId,
-                      item.productSize,
-                      item.qty
-                    );
-                  });
-                }
+                // if (infos && Array.isArray(infos)) {
+                //   infos.forEach((item) => {
+                //     updateProductQuantity(
+                //       item.productId,
+                //       item.productSize,
+                //       item.qty
+                //     );
+                //   });
+                // }
 
                 // Return the update results via the callback
                 return callBack(null, { updateResults });

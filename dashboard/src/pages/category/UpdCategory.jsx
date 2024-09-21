@@ -1,6 +1,8 @@
 import React, { Fragment, useState } from "react";
 import { MdCloudUpload, MdDelete, MdCreate } from "react-icons/md";
 import { AiFillFileImage } from "react-icons/ai";
+import ClipLoader from "react-spinners/ClipLoader";
+import SelectOpt from "react-select";
 
 import Modal from "@mui/material/Modal";
 import Box from "@mui/material/Box";
@@ -20,15 +22,26 @@ const style = {
   transform: "translate(-50%, -50%)",
   width: 800,
   bgcolor: "background.paper",
+  height: "90vh",
+
   border: "2px solid #000",
   borderRadius: "12px",
   boxShadow: 24,
+  overflowY: "scroll", // This will add a vertical scrollbar
+
   p: 4,
 };
 
-function UpdCategory({ closeModal, rowCategory }) {
+function UpdCategory({ closeModal, rowCategory, collections, setCategories }) {
   const [name, setName] = useState(rowCategory.name);
+  const [collectionName, setCollectionName] = useState(
+    rowCategory.collection_name
+  );
   const [meta_image, setMetaImage] = useState(rowCategory.meta_image);
+  const [meta_description, setMetaImageDescription] = useState(
+    rowCategory.meta_description
+  );
+
   const [image, setImage] = useState(
     `${config_url}/categories/${rowCategory.image}`
   );
@@ -37,6 +50,9 @@ function UpdCategory({ closeModal, rowCategory }) {
   const [oldImage, setOldImage] = useState(rowCategory.image);
   const [upload_image, setUploadedImage] = useState(false);
   const [file_image, setFileImage] = useState(null);
+  const [collectionId, setCollectionId] = useState(rowCategory.collect_id);
+  const [loading, setLoading] = useState(false);
+
   const handleChange = async () => {
     const formdata = new FormData();
     formdata.append("image_category", image);
@@ -45,6 +61,8 @@ function UpdCategory({ closeModal, rowCategory }) {
     formdata.append("name", name);
 
     formdata.append("meta_image", meta_image);
+    formdata.append("meta_description", meta_description);
+    formdata.append("collection_id", collectionId);
 
     try {
       const response = await axios.put(
@@ -59,10 +77,19 @@ function UpdCategory({ closeModal, rowCategory }) {
         }
       );
 
-      if (response.status === 200)
-        toast.success("Changement Category Success !!", {
+      if (response.status === 200) {
+        const updatedBlog = response.data;
+        setCategories((prevCategories) =>
+          prevCategories.map((categorie) =>
+            categorie.id === rowCategory.id ? updatedBlog : categorie
+          )
+        );
+
+        toast.success("Changement Categorie Success !!", {
           position: "top-right",
         });
+        closeModal();
+      }
     } catch (error) {
       console.error("Error:", error);
     }
@@ -72,6 +99,37 @@ function UpdCategory({ closeModal, rowCategory }) {
     setUploadedImage(true);
     setImage(file);
   };
+
+  //Filters
+
+  const selOptions = [];
+  const ids = collections?.map((o) => o.name);
+  const filtered = collections?.filter(
+    ({ name }, index) => !ids?.includes(name, index + 1)
+  );
+
+  for (let i = 0; i < filtered.length; i++) {
+    if (filtered.length > 0) {
+      selOptions.push({
+        value: filtered[i].name,
+        label: filtered[i].name,
+        id: filtered[i].id,
+        name: filtered[i].name,
+
+        meta_image: filtered[i].meta_image,
+        meta_description: filtered[i].meta_description,
+      });
+    }
+  }
+  const handle = (e) => {
+    console.log(e);
+    setName(e.name);
+    setMetaImage(e.meta_image);
+    setCollectionId(e.id);
+    setCollectionName(e.name);
+    setLoading(true);
+  };
+
   return (
     <Fragment>
       <Modal
@@ -87,18 +145,32 @@ function UpdCategory({ closeModal, rowCategory }) {
             </Typography>
           </div>
           <Divider />
+
+          <div className="flex items-center justify-center gap-10">
+            <div>
+              <span>Category:</span>
+              <h3 className="font-bold text-black">{name}</h3>
+            </div>
+            <div>
+              <span>Collection Name:</span>
+              <h3 className="font-bold text-black">{collectionName}</h3>
+            </div>
+          </div>
           <div className="mt-4 flex items-center justify-center justify-between">
-            <TextField
-              id="outlined-basic"
-              label="Name Category"
-              variant="outlined"
-              defaultValue={name}
-              onChange={(e) => setName(e.target.value)}
-            />
+            <div className="flex flex-col items-center">
+              <span className="text-black font-bold">
+                Selectez Collection :
+              </span>
+              <SelectOpt
+                className="Options"
+                options={selOptions}
+                onChange={handle}
+              />
+            </div>
             <div className="mt-4 mb-4">
               <TextField
                 id="outlined-multiline-static"
-                label="Description"
+                label="Meta Image"
                 multiline
                 defaultValue={meta_image}
                 onChange={(e) => setMetaImage(e.target.value)}
@@ -106,6 +178,7 @@ function UpdCategory({ closeModal, rowCategory }) {
               />
             </div>
           </div>
+
           <div className="mb-[150px]">
             <div
               className="form mb-[150px]"
@@ -125,7 +198,7 @@ function UpdCategory({ closeModal, rowCategory }) {
 
               {image ? (
                 <img
-                  className="rounded-full"
+                  className="w-[150px] h-[150px] rounded-full border-2 border-gray-400"
                   src={
                     typeof image === "string"
                       ? image
@@ -163,7 +236,7 @@ function UpdCategory({ closeModal, rowCategory }) {
               startIcon={<MdCreate />}
               onClick={() => handleChange()}
             >
-              Edit
+              Save
             </Button>
           </div>
         </Box>

@@ -2,14 +2,8 @@ import React, { Fragment, useState } from "react";
 import Modal from "@mui/material/Modal";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
-import FormControl from "@mui/material/FormControl";
-import InputLabel from "@mui/material/InputLabel";
-import Input from "@mui/material/Input";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
 
 import Button from "@mui/material/Button";
-import InputAdornment from "@mui/material/InputAdornment";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import axios from "axios";
@@ -43,9 +37,10 @@ function AnnulerOrder({ closeModalAnnuler, customerId, productList }) {
         infos: productList,
       })
       .then(() => {
-        toast.success("Maked Order Is Paid !!", {
+        toast.success("Order Is Canceled !!", {
           position: "top-right",
         });
+        closeModalAnnuler();
       });
   };
 

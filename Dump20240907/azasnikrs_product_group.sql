@@ -16,31 +16,30 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `user`
+-- Table structure for table `product_group`
 --
 
-DROP TABLE IF EXISTS `user`;
+DROP TABLE IF EXISTS `product_group`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `user` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `nom` varchar(255) NOT NULL,
-  `prenom` varchar(255) NOT NULL,
-  `email` varchar(255) NOT NULL,
-  `password` varchar(255) NOT NULL,
-  `role` varchar(255) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+CREATE TABLE `product_group` (
+  `product_id` int NOT NULL,
+  `group_id` int NOT NULL,
+  PRIMARY KEY (`product_id`,`group_id`),
+  KEY `group_id_idx` (`group_id`),
+  CONSTRAINT `group_id` FOREIGN KEY (`group_id`) REFERENCES `groupes` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `product_id` FOREIGN KEY (`product_id`) REFERENCES `produit` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `user`
+-- Dumping data for table `product_group`
 --
 
-LOCK TABLES `user` WRITE;
-/*!40000 ALTER TABLE `user` DISABLE KEYS */;
-INSERT INTO `user` VALUES (1,'Solutions','Medeva','medeva.solutions@gmail.com','$2b$10$eAi02yBx/i2boN4Mc/GP/e8qSal5zujDc.Ok0zH5gh2piFGBtbnNK','Super-Admin');
-/*!40000 ALTER TABLE `user` ENABLE KEYS */;
+LOCK TABLES `product_group` WRITE;
+/*!40000 ALTER TABLE `product_group` DISABLE KEYS */;
+INSERT INTO `product_group` VALUES (3,1),(10,1),(11,1),(27,1),(7,2),(11,2),(12,2),(13,2);
+/*!40000 ALTER TABLE `product_group` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -52,4 +51,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-07-08 13:19:39
+-- Dump completed on 2024-09-07 16:07:36

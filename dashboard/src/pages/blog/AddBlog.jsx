@@ -52,7 +52,7 @@ function AddBlog() {
 
   useEffect(() => {
     axios
-      .get(`${config_url}/api/categories`)
+      .get(`${config_url}/api/collections`)
       .then((res) => {
         if (Array.isArray(res.data)) {
           setCategories(res.data);
@@ -64,7 +64,7 @@ function AddBlog() {
         }
       })
       .catch((error) => {
-        console.error("Error fetching categories:", error);
+        console.error("Error fetching collections:", error);
       });
   }, []);
 
@@ -157,7 +157,7 @@ function AddBlog() {
 
                 {image_blog ? (
                   <img
-                    className="rounded-full"
+                    className="w-[150px] h-[150px] rounded-full border-2 border-gray-400"
                     src={image_blog && URL.createObjectURL(image_blog)}
                     width={150}
                     height={150}
@@ -206,7 +206,7 @@ function AddBlog() {
               />
             </div>{" "}
             <div className="flex flex-col items-center">
-              <span className="text-black font-bold">Categorie :</span>
+              <span className="text-black font-bold">Collection :</span>
               <SelectOpt
                 className="Options"
                 options={selOptions}

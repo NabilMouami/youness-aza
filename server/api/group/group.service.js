@@ -1,11 +1,10 @@
 const db = require("../../config/database");
 module.exports = {
   createGroupe: (data, callBack) => {
-    console.log(data);
     db.query(
       `insert into groupes(name) 
                 value(?)`,
-      [data.name],
+      [data.groupe],
 
       (error, results, fields) => {
         if (error) {
@@ -20,7 +19,7 @@ module.exports = {
     for (let i = 0; i < data.rowSelectionModel.length; i++) {
       db.query(
         `insert into product_group(product_id,group_id) 
-                values(?,?)`,
+                values(?,?) ON DUPLICATE KEY UPDATE product_id = product_id`,
         [data.rowSelectionModel[i], data.group_id],
 
         (insertError, insertResults, insertFields) => {
@@ -39,5 +38,18 @@ module.exports = {
       }
       return callBack(null, results);
     });
+  },
+
+  deleteGroupe: (id, callBack) => {
+    db.query(
+      `delete from groupes where id = ?`,
+      [id],
+      (error, results, fields) => {
+        if (error) {
+          callBack(error);
+        }
+        return callBack(null, results[0]);
+      }
+    );
   },
 };

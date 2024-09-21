@@ -16,29 +16,34 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `product_group`
+-- Table structure for table `coins`
 --
 
-DROP TABLE IF EXISTS `product_group`;
+DROP TABLE IF EXISTS `coins`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `product_group` (
-  `product_id` int NOT NULL,
-  `group_id` int NOT NULL,
-  PRIMARY KEY (`product_id`,`group_id`),
-  KEY `group_id_idx` (`group_id`),
-  CONSTRAINT `group_id` FOREIGN KEY (`group_id`) REFERENCES `groupes` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `product_id` FOREIGN KEY (`product_id`) REFERENCES `produit` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+CREATE TABLE `coins` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `customer_id` int DEFAULT NULL,
+  `balance` int DEFAULT '0',
+  `expiration_date` datetime DEFAULT NULL,
+  `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+  `coins_pending` int DEFAULT NULL,
+  `delivery_date` date DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `customer_id` (`customer_id`),
+  CONSTRAINT `coins_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `product_group`
+-- Dumping data for table `coins`
 --
 
-LOCK TABLES `product_group` WRITE;
-/*!40000 ALTER TABLE `product_group` DISABLE KEYS */;
-/*!40000 ALTER TABLE `product_group` ENABLE KEYS */;
+LOCK TABLES `coins` WRITE;
+/*!40000 ALTER TABLE `coins` DISABLE KEYS */;
+INSERT INTO `coins` VALUES (6,11,1532,'2025-08-29 17:12:21','2024-08-29 17:12:21',0,NULL),(7,5,5290,'2025-09-01 11:40:25','2024-07-07 10:47:04',1060,'2024-09-01');
+/*!40000 ALTER TABLE `coins` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
@@ -50,4 +55,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2024-07-08 13:19:38
+-- Dump completed on 2024-09-07 16:07:34
