@@ -12,8 +12,8 @@ module.exports = {
 
     // Step 2: Insert customer data into the database
     db.query(
-      `INSERT INTO customer (firstName, lastName, email, password, otp, otpExpiration) 
-     VALUES (?, ?, ?, ?,?,?)`,
+      `INSERT INTO customer (firstName, lastName, email, password, otp, otpExpiration,telephone) 
+     VALUES (?, ?, ?, ?,?,?,?)`,
       [
         data.firstName,
         data.lastName,
@@ -21,6 +21,7 @@ module.exports = {
         data.password,
         otp,
         otpExpiration,
+        data.telephone,
       ],
       (error, results, fields) => {
         if (error) {
@@ -253,8 +254,15 @@ module.exports = {
   updateCustomer: (id, data, callBack) => {
     console.log(data.password);
     db.query(
-      `update customer set firstName=?, lastName=?, email=?, password=? where id = ?`,
-      [data.firstName, data.lastName, data.email, data.password, id],
+      `update customer set firstName=?, lastName=?, email=?,telephone=?, password=? where id = ?`,
+      [
+        data.firstName,
+        data.lastName,
+        data.email,
+        data.telephone,
+        data.password,
+        id,
+      ],
       (error, results, fields) => {
         if (error) {
           callBack(error);
@@ -265,8 +273,8 @@ module.exports = {
   },
   updateCustomerWithoutPassword: (id, data, callBack) => {
     db.query(
-      `update customer set firstName=?, lastName=?, email=? where id = ?`,
-      [data.firstName, data.lastName, data.email, id],
+      `update customer set firstName=?, lastName=?, email=?,telephone=? where id = ?`,
+      [data.firstName, data.lastName, data.email, data.telephone, id],
       (error, results, fields) => {
         if (error) {
           callBack(error);

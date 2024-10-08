@@ -1,20 +1,14 @@
 import React, { Fragment, useState, useEffect } from "react";
 import Fab from "@mui/material/Fab";
 
-import { DataGrid } from "@mui/x-data-grid";
-import { Link, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
+import { Link } from "react-router-dom";
 import { config_url } from "../../config";
 import axios from "axios";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
 import Modal from "@mui/material/Modal";
 import Swal from "sweetalert2";
 import { RiDeleteBin6Fill, RiAddCircleLine, RiEdit2Line } from "react-icons/ri";
 import { Tooltip } from "@mui/material";
-import SelectOpt from "react-select";
 import UpdCollection from "./UpdCollection";
 
 const style = {
@@ -33,7 +27,7 @@ function ListCollections() {
   const [categories, setCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rowCategory, setRowCategory] = useState({});
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
   const [image, setImage] = useState("");
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -108,7 +102,7 @@ function ListCollections() {
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
-          <img src={`${config_url}/categories/${image}`} />
+          <img src={`${image}`} />
         </Box>
       </Modal>
       <div className="mt-10">
@@ -145,7 +139,7 @@ function ListCollections() {
                   </td>
                   <td className="flex items-center justify-center py-2 px-4 border border-gray-300">
                     <img
-                      src={`${config_url}/categories/${item.image}`}
+                      src={`${item.image}`}
                       alt={item.meta_image}
                       className="w-10 h-10"
                       onClick={() => handleLoadModalImage(item.image)}

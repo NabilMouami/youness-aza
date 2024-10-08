@@ -40,9 +40,7 @@ function UpdBlog({ closeModal, rowCategory, collections, blogs, setBlogs }) {
   const [collectionName, setCollectionName] = useState(rowCategory.name);
   const [selectedDate, setSelectedDate] = useState(rowCategory.date_created);
 
-  const [image, setImage] = useState(
-    `${config_url}/blogs/${rowCategory.image}`
-  );
+  const [image, setImage] = useState(rowCategory.image);
   const [fileName, setFileName] = useState("No selected file");
 
   const [oldImage, setOldImage] = useState(rowCategory.image);

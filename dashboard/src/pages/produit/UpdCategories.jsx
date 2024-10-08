@@ -27,7 +27,7 @@ import { Typography } from "@mui/material";
 const ListItem = styled("li")(({ theme }) => ({
   margin: theme.spacing(0.5),
 }));
-function UpdCategories() {
+function UpdCategories({ affectedCategories }) {
   const Detail = useSelector((state) => state.Load);
   const { Col } = Detail;
 
@@ -59,7 +59,8 @@ function UpdCategories() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col gap-4">
+      <h3>Already Related Collections (you can remove anyone from system):</h3>
       <Paper
         sx={{
           display: "flex",

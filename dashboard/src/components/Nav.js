@@ -68,22 +68,16 @@ const Nav = ({ children }) => {
     },
 
     {
-      url: "/app/hiden-produits",
-      i_class: "bx bxs-low-vision",
-      link_title: "Hiden Produits",
-      key: 7,
-    },
-    {
       url: "clients",
       i_class: "bx bx-smile ",
       link_title: "Clients",
-      key: 8,
+      key: 7,
     },
     {
       url: "utilisateurs",
       i_class: "bx bxs-user ",
       link_title: "Users",
-      key: 9,
+      key: 8,
     },
   ];
 

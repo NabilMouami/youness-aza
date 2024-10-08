@@ -42,14 +42,11 @@ function UpdCategory({ closeModal, rowCategory, collections, setCategories }) {
     rowCategory.meta_description
   );
 
-  const [image, setImage] = useState(
-    `${config_url}/categories/${rowCategory.image}`
-  );
+  const [image, setImage] = useState(`${rowCategory.image}`);
   const [fileName, setFileName] = useState("No selected file");
 
   const [oldImage, setOldImage] = useState(rowCategory.image);
   const [upload_image, setUploadedImage] = useState(false);
-  const [file_image, setFileImage] = useState(null);
   const [collectionId, setCollectionId] = useState(rowCategory.collect_id);
   const [loading, setLoading] = useState(false);
 

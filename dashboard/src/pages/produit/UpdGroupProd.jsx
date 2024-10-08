@@ -77,7 +77,8 @@ function UpdGroupProd() {
       });
   }, []);
   return (
-    <div>
+    <div className="flex flex-col gap-4">
+      <h3>Already Related Groupe(s) (you can remove anyone from system):</h3>
       <Paper
         sx={{
           display: "flex",

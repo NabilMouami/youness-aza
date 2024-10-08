@@ -105,12 +105,6 @@ function AddJustQty({
               </Button>
             </div>
           )}
-
-          <div className="bottom-0 mt-4">
-            <Button variant="outlined" color="error">
-              Remove discount
-            </Button>
-          </div>
         </Box>
       </Modal>
     </Fragment>

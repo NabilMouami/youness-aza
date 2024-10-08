@@ -21,11 +21,11 @@ import { RiCloseLargeFill } from "react-icons/ri";
 
 function AddProduit() {
   const [selectedGenres, setSelectedGenres] = useState("");
+  console.log(selectedGenres);
   const [type, setSelectType] = useState("0");
   const [categories, setCategories] = useState([]);
   const [category, setCategory] = useState("");
-  console.log(category);
-  const [status, setSelectStatus] = useState("new");
+  const [status, setSelectStatus] = useState("old");
   const [qty, setQty] = useState(0);
   const [quantity, setQuantity] = useState("");
   const [nom, setNom] = useState("");
@@ -34,11 +34,9 @@ function AddProduit() {
   const [prix, setPrix] = useState("");
   const [prix_promo, setPrixPromo] = useState(0);
   const [items, setItems] = useState([]); // Array to store list items
-  console.log("items:", items);
   const valueStrings = items.map((item) => `"${item.value}"`);
   const quantityStrings = items.map((item) => `"${item.quantity}"`);
 
-  console.log(quantityStrings);
   // Join the strings with commas and enclose the entire array in brackets
   const size_shoes = `[ ${valueStrings.join(",")} ]`;
   const size_quantity = `[ ${quantityStrings.join(",")} ]`;
@@ -52,11 +50,11 @@ function AddProduit() {
 
   const [selectVille, setSelectVille] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
-  console.log(JSON.stringify(selectedCategories));
   const [loading, setLoading] = useState(false);
-
   const handleUpload = async (e) => {
     e.preventDefault();
+
+    setLoading(true); // Set loading before starting the request
 
     const formdata = new FormData();
     formdata.append("image", image);
@@ -64,7 +62,7 @@ function AddProduit() {
     formdata.append("productSlug", productSlug);
     formdata.append("description", description);
     formdata.append("prix", prix);
-    formdata.append("prix_promo", prix_promo);
+    formdata.append("prix_promo", prix_promo || ""); // Ensure a value is passed, empty or not
     formdata.append("categories", JSON.stringify(selectedCategories));
     formdata.append("category", category);
     formdata.append("status", status);
@@ -74,13 +72,15 @@ function AddProduit() {
     formdata.append("size_shoes", size_shoes);
     formdata.append("size_quantity", size_quantity);
     formdata.append("meta_image", meta_image);
+
     selectedFiles.forEach((file, index) => {
       if (file) {
-        // Ensure the file is not null or undefined
+        // Only append valid files
         formdata.append("images", file);
-        console.log(`File ${index}:`, file); // Debug log for each file
+        console.log(`File ${index}:`, file); // Debugging log
       }
     });
+
     try {
       const response = await axios.post(
         `${config_url}/api/create-prod`,
@@ -88,19 +88,25 @@ function AddProduit() {
         {
           headers: {
             Authorization: "Bearer " + localStorage.getItem("token"),
-            "Content-Type": "multipart/form-data",
           },
         }
       );
-      if (response.status === 200)
+
+      if (response.status === 200) {
         toast.success("Ajoute Produit Success !!", {
           position: "top-right",
         });
-      setLoading(false);
+      }
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Failed to upload the product. Check console for details.", {
+        position: "top-right",
+      });
+    } finally {
+      setLoading(false); // Reset loading state after request completes
     }
   };
+
   const convertToSlug = (name) => {
     return name
       .toLowerCase() // Convert to lowercase
@@ -125,12 +131,7 @@ function AddProduit() {
   };
   const handleFileChange = (event) => {
     const newImage = event.target.files[0]; // Get the first selected file
-    if (selectedFiles.length > 2) {
-      toast.warning("Warning Notification !", {
-        position: "top-right",
-      });
-      return;
-    }
+
     if (newImage) {
       // Check if a file is selected
       setSelectedFiles([...selectedFiles, newImage]);
@@ -214,22 +215,7 @@ function AddProduit() {
     const selectedValues = e.map((option) => option.value).join(", ");
     setCategory(selectedValues);
   };
-  const handleRemoveOption = (removedValue) => {};
 
-  const customMultiValue = (props) => (
-    <div className="flex gap-2 ml-2 font-bold">
-      <div>{props.data.label}</div>
-      <button
-        onClick={(e) => {
-          props.removeProps.onClick();
-          handleRemoveOption(props.data.label);
-        }}
-        className="w-8 h-8 rounded-full text-black p-1 bg-red-400"
-      >
-        X
-      </button>
-    </div>
-  );
   return (
     <Fragment>
       <div className="page__main">
@@ -301,7 +287,6 @@ function AddProduit() {
                 options={selOptions}
                 isMulti
                 onChange={handle}
-                components={{ MultiValue: customMultiValue }}
               />
             </div>
             <div className="flex flex-col items-center">
@@ -311,7 +296,6 @@ function AddProduit() {
                 options={genres}
                 isMulti
                 onChange={handleChangeGenres}
-                components={{ MultiValue: customMultiValue }}
               />
             </div>
             <Box sx={{ ml: 2, minWidth: 220 }}>
@@ -320,9 +304,11 @@ function AddProduit() {
                   Status:
                 </label>{" "}
                 <Select value={status} onChange={handleSelectStatus}>
+                  <MenuItem value="old">Old</MenuItem>
+
                   <MenuItem value="new">New</MenuItem>
                   <MenuItem value="latest-arrival">Latest Arrival</MenuItem>
-                  <MenuItem value="release">Release</MenuItem>
+                  <MenuItem value="top-product">Top Products</MenuItem>
                 </Select>
               </FormControl>
             </Box>
@@ -332,7 +318,7 @@ function AddProduit() {
                   Type:
                 </label>{" "}
                 <Select value={type} onChange={handleSelectType}>
-                  <MenuItem value="0">Snikears</MenuItem>
+                  <MenuItem value="0">Sneakers</MenuItem>
                   <MenuItem value="1">Accessoires</MenuItem>
                 </Select>
               </FormControl>

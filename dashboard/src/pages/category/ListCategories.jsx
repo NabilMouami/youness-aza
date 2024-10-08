@@ -14,18 +14,8 @@ import Modal from "@mui/material/Modal";
 import Swal from "sweetalert2";
 import ClipLoader from "react-spinners/ClipLoader";
 
-import {
-  RiAddCircleFill,
-  RiDeleteBin6Fill,
-  RiAddBoxLine,
-  RiAddCircleLine,
-  RiEdit2Line,
-  RiEyeOffLine,
-  RiEyeLine,
-  RiCheckDoubleFill,
-  RiCloseLargeFill,
-} from "react-icons/ri";
-import { MdCloudUpload, MdDelete, MdOutlineSend } from "react-icons/md";
+import { RiDeleteBin6Fill, RiEdit2Line } from "react-icons/ri";
+import { MdCloudUpload } from "react-icons/md";
 
 import { Tooltip } from "@mui/material";
 import SelectOpt from "react-select";
@@ -45,6 +35,7 @@ const style = {
 
 function ListCategories() {
   const [categories, setCategories] = useState([]);
+  console.log(categories);
   const [collections, setCollections] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rowCategory, setRowCategory] = useState({});
@@ -169,7 +160,7 @@ function ListCategories() {
 
   const deleteCategory = (id, image) => {
     axios
-      .post(`${config_url}/api/categorie/${id}`, { image: image })
+      .post(`${config_url}/api/categorie_collection/${id}`, { image: image })
       .then(() => {
         setCategories(categories.filter((row) => row.id !== id));
       });
@@ -183,7 +174,8 @@ function ListCategories() {
       confirmButtonColor: "#3085d6",
       cancelButtonColor: "#d33",
       cancelButtonText: "Annuler",
-      confirmButtonText: "Oui, supprimez Categorie : " + fname + " ",
+      confirmButtonText:
+        "Oui, supprimez Categorie : " + fname + "With Id " + id,
     }).then((result) => {
       if (result.isConfirmed) {
         deleteCategory(id, image);
@@ -220,7 +212,7 @@ function ListCategories() {
         aria-describedby="modal-modal-description"
       >
         <Box sx={style}>
-          <img src={`${config_url}/categories/${image}`} />
+          <img src={`${image}`} />
         </Box>
       </Modal>
       <div className="mt-10">
@@ -303,7 +295,7 @@ function ListCategories() {
                   </td>
                   <td className="flex items-center justify-center py-2 px-4 border border-gray-300">
                     <img
-                      src={`${config_url}/categories/${item.image}`}
+                      src={`${item.image}`}
                       alt={item.meta_image}
                       className="w-10 h-10"
                       onClick={() => handleLoadModalImage(item.image)}

@@ -1,14 +1,25 @@
 const express = require("express");
+
 const cors = require("cors");
 const fs = require("fs");
 const handlebars = require("handlebars");
 const path = require("path");
+const dotenv = require("dotenv");
+const {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} = require("@aws-sdk/client-s3");
+const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { Endpoint } = require("@aws-sdk/types");
+const { v4: uuidv4 } = require("uuid");
+
 const nodemailer = require("nodemailer");
 const { checkToken } = require("./auth/token_validation");
-
 const multer = require("multer");
 
 const app = express();
+dotenv.config();
 
 const db = require("./config/database");
 
@@ -23,36 +34,44 @@ const saleRouter = require("./api/sales/sale.router");
 const customerRouter = require("./api/customers/cust.router");
 
 app.use(cors("*"));
-// storage for images
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, "public/images");
-//   },
-//   filename: (req, file, cb) => {
-//     const originalName = file.originalname;
-//     const extension = originalName.split(".").pop(); // Extract extension
-//     cb(null, `${Date.now()}.${extension}`);
-//   },
-// });
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    console.log(file.fieldname);
-    if (file.fieldname === "image_blog") {
-      cb(null, "public/blogs");
-    } else if (file.fieldname === "image_category") {
-      cb(null, "public/categories");
-    } else cb(null, "public/images");
+
+const s3 = new S3Client({
+  endpoint: "https://ams3.digitaloceanspaces.com", // DigitalOcean Spaces endpoint
+  region: process.env.DO_SPACE_REGION, // or the region closest to your server
+  credentials: {
+    accessKeyId: process.env.DO_SPACE_KEY,
+    secretAccessKey: process.env.DO_SPACE_SECRET,
   },
-  filename: (req, file, cb) => {
-    const originalName = file.originalname;
-    const extension = originalName.split(".").pop(); // Extract extension
-    cb(null, `${Date.now()}.${extension}`);
-  },
-});
-const upload = multer({
-  storage: storage,
 });
 
+const uploadImage = async (file, folder) => {
+  if (!file.buffer) {
+    throw new Error("File buffer is empty.");
+  }
+
+  const fileName = `${folder}/${Date.now()}-${file.originalname}`;
+
+  const params = {
+    Bucket: process.env.DO_SPACE_BUCKET,
+    Key: fileName, // Ensure unique file names
+    Body: file.buffer,
+    ACL: "public-read", // Make the file publicly readable
+  };
+
+  try {
+    const command = new PutObjectCommand(params);
+    await s3.send(command); // Upload the file
+
+    // Return the permanent public URL
+    const publicUrl = `${process.env.DO_SPACE_ENDPOINT}/${fileName}`;
+    return publicUrl;
+  } catch (err) {
+    throw new Error(`Error uploading image: ${err.message}`);
+  }
+};
+
+const storage = multer.memoryStorage(); // Use memory storage for S3
+const upload = multer({ storage }); // Configuring multer with memory storage
 const port = process.env.PORT || 5000;
 app.use("/api/users", userRouter);
 app.use("/api/groupes", groupRouter);
@@ -142,185 +161,300 @@ app.post("/send-order-email", (req, res) => {
     });
   });
 });
-
 app.post(
   "/api/create-prod",
-  upload.fields([{ name: "image", maxCount: 1 }, { name: "images" }]),
-  (req, res) => {
-    const image = req.files?.image?.[0]?.filename || null;
-    const genre = req.body.genre;
-    const type = req.body.type;
-    const status_model = req.body.status;
-    const size_shoes = req.body.size_shoes;
-    const meta_image = req.body.meta_image;
-    const nom = req.body.nom;
-    const productSlug = req.body.productSlug;
-    const category = req.body.category;
-    const prix = req.body.prix;
-    let prix_promo = req.body.prix_promo;
-    const qty = req.body.size_quantity;
-    let categories = req.body.categories;
-    // Convert prix_promo to null if it's an empty string
-    prix_promo = prix_promo === "" ? 0 : prix_promo;
+  upload.fields([{ name: "image", maxCount: 1 }, { name: "images" }]), // Multer middleware for image uploads
+  async (req, res) => {
+    console.log("Files:", req.files);
 
-    const description = req.body.description;
-    const images = (req.files.images || [])
-      .filter((file) => file && file.filename)
-      .map((item) => item.filename);
-    const firstTableString = JSON.stringify(images);
+    const {
+      genre,
+      type,
+      status,
+      size_shoes,
+      meta_image,
+      nom,
+      productSlug,
+      category,
+      prix,
+      prix_promo,
+      size_quantity: qty,
+      categories: rawCategories,
+      description,
+    } = req.body;
 
-    // Log the entire request body to inspect it
-    console.log("Request Body:", req.body);
+    const imageFile = req.files?.image?.[0]; // Single image
+    const imagesFiles = req.files?.images || []; // Multiple images
 
-    // Check if categories is an array
-    if (!Array.isArray(categories)) {
-      try {
-        categories = JSON.parse(categories);
-      } catch (e) {
-        console.log("Failed to parse categories:", categories);
-        categories = [];
-      }
-    }
+    const categories = Array.isArray(rawCategories)
+      ? rawCategories
+      : JSON.parse(rawCategories || "[]");
 
-    db.query(
-      `insert into produit(name,category,price,price_promo,description,nemuro_shoes,image,meta_image,out_stock,hiden,images,meta_images,qty,genre,status_model,name_by_filtered,type) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [
-        nom,
-        category,
-        prix,
-        prix_promo,
-        description,
-        size_shoes,
-        image,
-        meta_image,
-        1,
-        0,
-        firstTableString,
-        firstTableString,
-        qty,
-        genre,
-        status_model,
-        productSlug,
-        type,
-      ],
-      (err, result, fields) => {
-        if (err) {
-          console.log(err);
-          res.status(500).send(err); // Send error response
-        } else {
+    const finalPrixPromo = prix_promo === "" ? 0 : prix_promo;
+
+    try {
+      // Upload single image if available
+      const imageUrl = imageFile
+        ? await uploadImage(imageFile, "images")
+        : null;
+
+      // Upload multiple images
+      const imageUrls = await Promise.all(
+        imagesFiles.map((file) => uploadImage(file, "images"))
+      );
+
+      const firstTableString = JSON.stringify(imageUrls);
+
+      // Insert into the database
+      db.query(
+        `INSERT INTO produit(name, category, price, price_promo, description, nemuro_shoes, image, meta_image, out_stock, hiden, images, meta_images, qty, genre, status_model, name_by_filtered, type)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          nom,
+          category,
+          prix,
+          finalPrixPromo,
+          description,
+          size_shoes,
+          imageUrl,
+          meta_image,
+          1, // out_stock
+          0, // hiden
+          firstTableString,
+          firstTableString,
+          qty,
+          genre,
+          status,
+          productSlug,
+          type,
+        ],
+        (err, result) => {
+          if (err) {
+            console.error("Error inserting product:", err);
+            return res.status(500).send(err);
+          }
+
           const PrID = result.insertId;
+
+          // Insert into product collections
           if (categories.length > 0) {
-            console.log("Categories:", categories);
-            for (i = 0; i < categories.length; i++) {
+            categories.forEach((cat) => {
               db.query(
-                "INSERT INTO  produit_collection(prd_id,collection_id) VALUES (?,?)",
-                [PrID, categories[i]?.id],
-                (err, result) => {
-                  if (err) {
-                    console.log(err);
-                  }
+                "INSERT INTO produit_collection(prd_id, collection_id) VALUES (?, ?)",
+                [PrID, cat?.id],
+                (err) => {
+                  if (err) console.log("Error inserting into collection:", err);
                 }
               );
-            }
-            res.send("Values Inserted");
-          } else {
-            console.log("id", PrID, "categories are empty or undefined");
+            });
           }
+
+          res.send("Product and images inserted successfully.");
+        }
+      );
+    } catch (err) {
+      console.error("Error in processing:", err);
+      res.status(500).send(err.message);
+    }
+  }
+);
+app.post("/api/produit/size_qty/:product_id", (req, res) => {
+  const { product_id } = req.params;
+  const { nemuro_shoes, qty } = req.body;
+  const sql = "UPDATE produit SET nemuro_shoes = ?, qty = ? WHERE id = ?";
+  db.query(sql, [nemuro_shoes, qty, product_id], (err, result) => {
+    if (err) throw err;
+    res.send("Data updated");
+  });
+});
+
+function updateProductQuantity(productId, shoeSize, qtyToUpdate) {
+  return new Promise((resolve, reject) => {
+    const queryGetIndexAndQty = `
+      SELECT 
+        JSON_UNQUOTE(JSON_SEARCH(nemuro_shoes, 'one', ?)) as ind,
+        JSON_UNQUOTE(JSON_EXTRACT(qty, JSON_UNQUOTE(JSON_SEARCH(nemuro_shoes, 'one', ?)))) as currentQty
+      FROM produit 
+      WHERE id = ?
+    `;
+
+    db.query(
+      queryGetIndexAndQty,
+      [shoeSize, shoeSize, productId],
+      (err, result) => {
+        if (err) {
+          return reject(err);
+        }
+
+        const indexPath = result[0]?.ind;
+        const currentQty = parseInt(result[0]?.currentQty, 10);
+
+        if (indexPath && !isNaN(currentQty)) {
+          const indexMatch = indexPath.match(/\[(\d+)\]$/);
+          const index = indexMatch ? indexMatch[1] : null;
+
+          if (index !== null) {
+            const newQty = qtyToUpdate;
+            if (newQty >= 0) {
+              const queryUpdateQty = `
+              UPDATE produit
+              SET qty = JSON_SET(qty, ?, CAST(? AS CHAR))
+              WHERE id = ?
+            `;
+
+              db.query(
+                queryUpdateQty,
+                [`$[${index}]`, String(newQty), productId],
+                (err, result) => {
+                  if (err) {
+                    return reject(err);
+                  }
+                  resolve();
+                }
+              );
+            } else {
+              reject(new Error("Cannot decrease quantity below zero."));
+            }
+          } else {
+            reject(new Error("Failed to extract index from path."));
+          }
+        } else {
+          reject(
+            new Error("Shoe size not found or current quantity is invalid.")
+          );
         }
       }
     );
-  }
-);
+  });
+}
 
+app.post("/api/update-quantity", async (req, res) => {
+  const { productId, shoeSize, qtyToUpdate } = req.body;
+
+  try {
+    await updateProductQuantity(productId, shoeSize, qtyToUpdate);
+    res.status(200).send("Quantity updated successfully");
+  } catch (err) {
+    res.status(500).send("Error updating quantity: " + err.message);
+  }
+});
 app.put(
   "/api/update-prod/:id",
   upload.fields([{ name: "image", maxCount: 1 }]),
-  (req, res) => {
-    const imagePath = path.join(__dirname, "public/images");
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const upload_image = req.body.upload_image;
+      const oldimage = req.body.oldimage;
 
-    const id = req.params.id;
-    const upload_image = req.body.upload_image;
-    const oldimage = req.body.oldimage;
+      const status = req.body.status;
+      const type = req.body.type;
+      const genre = req.body.genre;
+      const affected_categories = req.body.affected_categories;
+      const changed_category = req.body.changed_category;
+      const changed_groupe = req.body.changed_groupe;
+      const groupe_id = req.body.groupe_id;
+      const nom = req.body.nom;
+      const productSlug = req.body.productSlug;
+      const prix = req.body.prix;
+      const prix_promo = req.body.prix_promo;
+      const description = req.body.description;
+      const out_of_stock = parseInt(req.body.out_of_stock);
 
-    const category = req.body.category;
-    const affected_categories = req.body.affected_categories;
-    console.log(affected_categories);
-    const changed_category = req.body.changed_category;
-    const changed_groupe = req.body.changed_groupe;
-    const groupe_id = req.body.groupe_id;
-    const nom = req.body.nom;
-    const productSlug = req.body.productSlug;
-    const prix = req.body.prix;
-    const prix_promo = req.body.prix_promo;
-    const description = req.body.description;
-    const out_of_stock = parseInt(req.body.out_of_stock);
-    db.query(
-      `update produit set name = ?, name_by_filtered = ? ,price = ?,price_promo = ?,description = ?,out_stock = ? WHERE id = ?`,
-      [nom, productSlug, prix, prix_promo, description, out_of_stock, id],
-      (err, result, fields) => {
-        if (err) {
-          console.log(err);
-        } else {
-          res.send(result);
-        }
-      }
-    );
-    const changedCategoryBoolean = changed_category === "true";
-    const changedGroupeBoolean = changed_groupe === "true";
-
-    if (changedCategoryBoolean) {
-      for (let i = 0; i < affected_categories.length; i++) {
+      // Update main product data
+      await new Promise((resolve, reject) => {
         db.query(
-          "INSERT INTO  produit_collection(prd_id,categorie_id) VALUES (?,?)",
-          [id, affected_categories[i]],
+          `UPDATE produit SET name = ?, name_by_filtered = ?, price = ?, price_promo = ?, description = ?, status_model = ?, type = ?, genre = ?, out_stock = ? WHERE id = ?`,
+          [
+            nom,
+            productSlug,
+            prix,
+            prix_promo,
+            description,
+            status,
+            type,
+            genre,
+            out_of_stock,
+            id,
+          ],
           (err, result) => {
-            if (err) {
-              console.log(err);
-            }
+            if (err) reject(err);
+            else resolve(result);
           }
         );
-      }
-    }
-
-    if (changedGroupeBoolean) {
-      db.query(
-        "INSERT INTO product_group (product_id, group_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE product_id = product_id",
-        [id, groupe_id]
-      );
-    }
-    // if changed image principal of product;
-    const uploadImageBoolean = upload_image === "true";
-    if (uploadImageBoolean) {
-      console.log("hamiiiiiiiid");
-      const image = req?.files?.image[0]?.filename;
-      const imagePathToDelete = path.join(imagePath, oldimage);
-      console.log(imagePathToDelete);
-      // Check if the file exists
-      fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
-        if (err) {
-          // File does not exist
-          console.log("error image deleted !!");
-        }
-
-        // Delete the file
-        fs.unlink(imagePathToDelete, () => {
-          console.log("deleted Image!!");
-        });
       });
-      db.query(
-        `update produit set image = ? WHERE id = ?`,
-        [image, id],
-        (err, result, fields) => {
-          if (err) {
-            console.log(err);
-          } else {
-            res.send(result);
-          }
+
+      // Handle category update if needed
+      if (changed_category === "true" && Array.isArray(affected_categories)) {
+        const categoryPromises = affected_categories.map(
+          (categoryId) =>
+            new Promise((resolve, reject) => {
+              db.query(
+                "INSERT INTO produit_collection(prd_id, collection_id) VALUES (?, ?)",
+                [id, categoryId],
+                (err, result) => {
+                  if (err) reject(err);
+                  else resolve(result);
+                }
+              );
+            })
+        );
+        await Promise.all(categoryPromises);
+      }
+
+      // Handle group update if needed
+      if (changed_groupe === "true") {
+        await new Promise((resolve, reject) => {
+          db.query(
+            "INSERT INTO product_group (product_id, group_id) VALUES (?, ?) ON DUPLICATE KEY UPDATE product_id = product_id",
+            [id, groupe_id],
+            (err, result) => {
+              if (err) reject(err);
+              else resolve(result);
+            }
+          );
+        });
+      }
+
+      // Handle image upload and deletion if needed
+      if (upload_image === "true") {
+        const imageFile = req.files?.image?.[0]; // Single image
+
+        if (imageFile) {
+          const imageUrl = await uploadImage(imageFile, "images");
+          const key = oldimage.split(process.env.DO_SPACE_ENDPOINT + "/")[1];
+
+          // Delete old image from S3
+          await s3.send(
+            new DeleteObjectCommand({
+              Bucket: process.env.DO_SPACE_BUCKET,
+              Key: key,
+            })
+          );
+
+          // Update the new image in the database
+          await new Promise((resolve, reject) => {
+            db.query(
+              `UPDATE produit SET image = ? WHERE id = ?`,
+              [imageUrl, id],
+              (err, result) => {
+                if (err) reject(err);
+                else resolve(result);
+              }
+            );
+          });
         }
-      );
+      }
+
+      // Send final response after all operations are complete
+      res.status(200).json({ message: "Product updated successfully." });
+    } catch (err) {
+      console.error("Error:", err);
+      res.status(500).json({ error: "Internal Server Error" });
     }
   }
 );
+
 //Out Of Stock
 app.put("/api/out_of_stock/:id", (req, res) => {
   const id = req.params.id;
@@ -439,7 +573,24 @@ app.get("/api/products/promotion", (req, res) => {
       if (err) {
         console.log(err);
       } else {
-        res.send(result);
+        const processedResult = result.map((product) => {
+          // Parse the qty field
+          let qtyArray;
+          try {
+            qtyArray = JSON.parse(product.qty);
+          } catch (e) {
+            console.error(`Failed to parse qty for product ${product.id}:`, e);
+            qtyArray = [];
+          }
+
+          if (Array.isArray(qtyArray) && qtyArray.every((qty) => qty === "0")) {
+            return { ...product, status: "Sold out" };
+          } else {
+            return { ...product };
+          }
+        });
+
+        res.send(processedResult);
       }
     }
   );
@@ -458,6 +609,18 @@ app.get("/api/products/release", (req, res) => {
     }
   );
 });
+app.get("/api/products/top-products", (req, res) => {
+  db.query(
+    "SELECT produit.id AS id,produit.*, GROUP_CONCAT(collection.name ORDER BY collection.name ASC SEPARATOR ', ') AS category_names  FROM produit JOIN produit_collection ON produit.id = produit_collection.prd_id JOIN collection ON produit_collection.collection_id = collection.id WHERE  produit.hiden = '0'  AND produit.status_model = 'top-product'  GROUP BY produit.id, produit.name, produit.price, produit.qty;",
+    (err, result) => {
+      if (err) {
+        console.log(err);
+      } else {
+        res.send(result);
+      }
+    }
+  );
+});
 //Alls Products By Status_Model is Release and Not Hiden  (collection/nouveaux in Next js)
 
 app.get("/api/products/nouveaux", (req, res) => {
@@ -467,7 +630,24 @@ app.get("/api/products/nouveaux", (req, res) => {
       if (err) {
         console.log(err);
       } else {
-        res.send(result);
+        const processedResult = result.map((product) => {
+          // Parse the qty field
+          let qtyArray;
+          try {
+            qtyArray = JSON.parse(product.qty);
+          } catch (e) {
+            console.error(`Failed to parse qty for product ${product.id}:`, e);
+            qtyArray = [];
+          }
+
+          if (Array.isArray(qtyArray) && qtyArray.every((qty) => qty === "0")) {
+            return { ...product, status: "Sold out" };
+          } else {
+            return { ...product };
+          }
+        });
+
+        res.send(processedResult);
       }
     }
   );
@@ -652,10 +832,18 @@ app.post("/api/product/:id", (req, res) => {
   const id = req.params.id;
   const { image, images } = req.body;
   console.log(req.body);
+  const key_image = image.split(process.env.DO_SPACE_ENDPOINT + "/")[1];
+  console.log("image:", image, "key:", key_image);
+
+  s3.send(
+    new DeleteObjectCommand({
+      Bucket: process.env.DO_SPACE_BUCKET,
+      Key: key_image,
+    })
+  );
 
   const array_images = JSON.parse(images);
-
-  const imagePath = path.join(__dirname, "public/images");
+  console.log(array_images);
 
   db.query("DELETE FROM produit WHERE id = ?", [id], (err, result) => {
     if (err) {
@@ -664,35 +852,19 @@ app.post("/api/product/:id", (req, res) => {
       res.send(result);
     }
   });
-  const imagePathToDelete = path.join(imagePath, image);
-  console.log(imagePathToDelete);
-  // Check if the file exists
-  fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
-    if (err) {
-      // File does not exist
-      console.log("error image deleted !!");
-    }
 
-    // Delete the file
-    fs.unlink(imagePathToDelete, () => {
-      console.log("deleted Image!!");
-    });
-  });
   for (i = 0; i < array_images.length; i++) {
-    const imagePathToDelete = path.join(imagePath, array_images[i]);
-    console.log(imagePathToDelete);
-    // Check if the file exists
-    fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
-      if (err) {
-        // File does not exist
-        console.log("error image deleted !!");
-      }
+    const key_images = array_images[i].split(
+      process.env.DO_SPACE_ENDPOINT + "/"
+    )[1];
+    console.log("key_images:" + key_images);
 
-      // Delete the file
-      fs.unlink(imagePathToDelete, () => {
-        console.log("deleted Image!!");
-      });
-    });
+    s3.send(
+      new DeleteObjectCommand({
+        Bucket: process.env.DO_SPACE_BUCKET,
+        Key: key_images,
+      })
+    );
   }
 });
 // delete image from file and change array in database table produit to another array sended
@@ -701,23 +873,14 @@ app.put("/api/images/:id", (req, res) => {
   const id = req.params.id;
   const image_name = req.body.image_name;
   const images = req.body.images;
+  const key = image_name.split(process.env.DO_SPACE_ENDPOINT + "/")[1];
 
-  const imagePath = path.join(__dirname, "public/images");
-
-  const imagePathToDelete = path.join(imagePath, image_name);
-  console.log(imagePathToDelete);
-  // Check if the file exists
-  fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
-    if (err) {
-      // File does not exist
-      console.log("error image deleted !!");
-    }
-
-    // Delete the file
-    fs.unlink(imagePathToDelete, () => {
-      console.log("deleted Image!!");
-    });
-  });
+  console.log("image:", image_name, "images:", images, "key:", key);
+  const params = {
+    Bucket: process.env.DO_SPACE_BUCKET,
+    Key: key,
+  };
+  s3.send(new DeleteObjectCommand(params));
 
   db.query(
     `update produit set images = ? WHERE id = ?`,
@@ -737,13 +900,15 @@ app.put("/api/images/:id", (req, res) => {
 app.put(
   "/api/image/:id",
   upload.fields([{ name: "image", maxCount: 1 }]),
-  (req, res) => {
+  async (req, res) => {
     const id = req.params.id;
+    const imageFile = req.files?.image?.[0]; // Single image
+    const imageUrl = imageFile ? await uploadImage(imageFile, "images") : null;
 
-    const image = req?.files?.image[0]?.filename;
     const array = JSON.parse(req.body.images);
-    array.push(image);
+    array.push(imageUrl);
     const images = JSON.stringify(array);
+    console.log(images);
     db.query(
       `update produit set images = ? WHERE id = ?`,
       [images, id],
@@ -820,15 +985,18 @@ app.get("/api/categories", (req, res) => {
 app.post(
   "/api/create-category",
   upload.single("image_category"),
-  (req, res) => {
-    const image = req.file?.filename || null;
+  async (req, res) => {
+    const imageFile = req.file || null;
     console.log(req.body);
-    console.log(image);
 
     const meta_image = req.body.meta_image_category;
     const meta_description = req.body.meta_image_descrition;
     const name_category = req.body.name_category;
     const collectionId = req.body.collection_id;
+    const image = imageFile
+      ? await uploadImage(imageFile, "collections")
+      : null;
+
     db.query(
       `insert into categorie(name,image,meta_image,meta_description,collect_id) values(?,?,?,?,?)`,
       [name_category, image, meta_image, meta_description, collectionId],
@@ -837,8 +1005,9 @@ app.post(
           console.log(err);
           res.status(500).send(err); // Send error response
         } else {
-          // Construct the custom object
+          // Construct the custom object with the inserted ID
           const responseObject = {
+            id: result.insertId, // Add the inserted ID here
             name: name_category,
             image: image, // Adjust the path as needed
             meta_image: meta_image,
@@ -854,8 +1023,7 @@ app.post(
 app.put(
   "/api/update-categorie/:id",
   upload.single("image_category"),
-  (req, res) => {
-    const imagePath = path.join(__dirname, "public/categories"); // Path to store images
+  async (req, res) => {
     const id = req.params.id; // Category ID from params
     const {
       upload_image,
@@ -870,7 +1038,7 @@ app.put(
     db.query(
       `UPDATE categorie SET name = ?, meta_image = ?, meta_description = ?, collect_id = ? WHERE id = ?`,
       [name, meta_image, meta_description, collection_id, id],
-      (err, result) => {
+      async (err, result) => {
         if (err) {
           console.log(err);
           return res.status(500).send("Error updating category");
@@ -878,74 +1046,86 @@ app.put(
 
         // If an image is being updated
         if (upload_image === "true" && req.file) {
-          const image = req.file.filename; // New uploaded image filename
-          const imagePathToDelete = path.join(imagePath, oldimage); // Path to the old image
+          try {
+            const imageUrl = await uploadImage(req.file, "collections");
 
-          // Delete the old image from the file system if it exists
-          fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
-            if (!err) {
-              fs.unlink(imagePathToDelete, () => {
-                console.log("Old image deleted");
-              });
-            }
-          });
-
-          // Update the image field in the database
-          db.query(
-            `UPDATE categorie SET image = ? WHERE id = ?`,
-            [image, id],
-            (err, result) => {
-              if (err) {
-                console.log(err);
-                return res.status(500).send("Error updating category image");
-              }
-
-              // Fetch and return the updated category
-              db.query(
-                `SELECT 
-      c.id as id,
-      c.name AS name, 
-      c.image AS image, 
-      c.meta_image AS meta_image, 
-      c.meta_description AS meta_description, 
-      col.name AS collection_name ,
-      c.collect_id as collect_id
-    FROM 
-      categorie c 
-    JOIN 
-      collection col 
-    ON 
-      c.collect_id = col.id where c.id= ?`,
-                [id],
-                (err, updatedCategory) => {
-                  if (err) {
-                    console.log(err);
-                    return res
-                      .status(500)
-                      .send("Error fetching updated category");
-                  }
-                  res.status(200).send(updatedCategory[0]); // Send the updated category
-                }
+            // Delete the old image if it exists
+            if (oldimage) {
+              const key = oldimage.split(
+                `${process.env.DO_SPACE_ENDPOINT}/`
+              )[1];
+              await s3.send(
+                new DeleteObjectCommand({
+                  Bucket: process.env.DO_SPACE_BUCKET,
+                  Key: key,
+                })
               );
             }
-          );
+
+            // Update the image field in the database
+            db.query(
+              `UPDATE categorie SET image = ? WHERE id = ?`,
+              [imageUrl, id],
+              (err, result) => {
+                if (err) {
+                  console.log(err);
+                  return res.status(500).send("Error updating category image");
+                }
+
+                // Fetch and return the updated category
+                db.query(
+                  `SELECT 
+                      c.id as id,
+                      c.name AS name, 
+                      c.image AS image, 
+                      c.meta_image AS meta_image, 
+                      c.meta_description AS meta_description, 
+                      col.name AS collection_name,
+                      c.collect_id as collect_id
+                    FROM 
+                      categorie c 
+                    JOIN 
+                      collection col 
+                    ON 
+                      c.collect_id = col.id 
+                    WHERE c.id= ?`,
+                  [id],
+                  (err, updatedCategory) => {
+                    if (err) {
+                      console.log(err);
+                      return res
+                        .status(500)
+                        .send("Error fetching updated category");
+                    }
+                    res.status(200).send(updatedCategory[0]); // Send the updated category
+                  }
+                );
+              }
+            );
+          } catch (uploadErr) {
+            console.log(uploadErr);
+            return res
+              .status(500)
+              .send(`Error uploading image: ${uploadErr.message}`);
+          }
         } else {
           // No image update, just return the updated category
           db.query(
             `SELECT 
-      c.id as id,
-      c.name AS name, 
-      c.image AS image, 
-      c.meta_image AS meta_image, 
-      c.meta_description AS meta_description, 
-      col.name AS collection_name ,
-      c.collect_id as collect_id
-    FROM 
-      categorie c 
-    JOIN 
-      collection col 
-    ON 
-      c.collect_id = col.id where c.id = ?`,
+                c.id as id,
+                c.name AS name, 
+                c.image AS image, 
+                c.meta_image AS meta_image, 
+                c.meta_description AS meta_description, 
+                col.name AS collection_name,
+                c.collect_id as collect_id
+              FROM 
+                categorie c 
+              JOIN 
+                collection col 
+              ON 
+                c.collect_id = col.id 
+              WHERE c.id= ?`,
             [id],
             (err, updatedCategory) => {
               if (err) {
@@ -964,89 +1144,66 @@ app.put(
 app.put(
   "/api/update-collection/:id",
   upload.single("image_category"),
-  (req, res) => {
-    const imagePath = path.join(__dirname, "public/categories"); // Path to store images
-    const id = req.params.id; // Collection ID from params
-    const { upload_image, oldimage, name, meta_image, meta_description } =
-      req.body; // Destructure request body
+  async (req, res) => {
+    const id = req.params.id;
+    const upload_image = req.body.upload_image;
+    const oldimage = req.body.oldimage;
+    const name = req.body.name;
+    const meta_image = req.body.meta_image;
+    const meta_description = req.body.meta_description;
 
-    // Update the collection fields in the database
-    db.query(
-      `UPDATE collection SET name = ?, meta_image = ?, meta_description = ? WHERE id = ?`,
-      [name, meta_image, meta_description, id],
-      (err, result) => {
-        if (err) {
-          console.log(err);
-          return res.status(500).send("Error updating collection");
-        }
+    try {
+      // Update the collection fields in the database
+      await db.query(
+        `UPDATE collection SET name = ?, meta_image = ?, meta_description = ? WHERE id = ?`,
+        [name, meta_image, meta_description, id]
+      );
 
-        // If an image is being updated
-        if (upload_image === "true" && req.file) {
-          const image = req.file.filename; // New uploaded image filename
-          const imagePathToDelete = path.join(imagePath, oldimage); // Path to the old image
+      // If an image is being updated
+      if (upload_image === "true" && req.file) {
+        const imageFile = req.file; // Single image
+        const imageUrl = await uploadImage(imageFile, "collections");
+        const key = oldimage.split(process.env.DO_SPACE_ENDPOINT + "/")[1];
 
-          // Delete the old image from the file system if it exists
-          fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
-            if (!err) {
-              fs.unlink(imagePathToDelete, () => {
-                console.log("Old image deleted");
-              });
-            }
-          });
+        const params = {
+          Bucket: process.env.DO_SPACE_BUCKET,
+          Key: key,
+        };
 
-          // Update the image field in the database
-          db.query(
-            `UPDATE collection SET image = ? WHERE id = ?`,
-            [image, id],
-            (err, result) => {
-              if (err) {
-                console.log(err);
-                return res.status(500).send("Error updating collection image");
-              }
-              // Respond with the updated collection data
-              db.query(
-                `SELECT * FROM collection WHERE id = ?`,
-                [id],
-                (err, updatedCollection) => {
-                  if (err) {
-                    console.log(err);
-                    return res
-                      .status(500)
-                      .send("Error fetching updated collection");
-                  }
-                  res.status(200).send(updatedCollection[0]); // Send the updated collection
-                }
-              );
-            }
-          );
-        } else {
-          // No image update, just return the updated collection
-          db.query(
-            `SELECT * FROM collection WHERE id = ?`,
-            [id],
-            (err, updatedCollection) => {
-              if (err) {
-                console.log(err);
-                return res
-                  .status(500)
-                  .send("Error fetching updated collection");
-              }
-              res.status(200).send(updatedCollection[0]); // Send the updated collection
-            }
-          );
-        }
+        // Delete the old image
+        await s3.deleteObject(params).promise();
+
+        // Update the image field in the database
+        await db.query(`UPDATE collection SET image = ? WHERE id = ?`, [
+          imageUrl,
+          id,
+        ]);
       }
-    );
+
+      // Respond with the updated collection data
+      const updatedCollection = await db.query(
+        `SELECT * FROM collection WHERE id = ?`,
+        [id]
+      );
+
+      // Ensure the result is an array and send the first item
+      if (Array.isArray(updatedCollection) && updatedCollection.length > 0) {
+        res.status(200).send(updatedCollection[0]); // Send the updated collection
+      } else {
+        res.status(404).send("Collection not found");
+      }
+    } catch (err) {
+      console.log(err);
+      res.status(500).send("Error updating collection");
+    }
   }
 );
 
 //delete a category
-app.post("/api/categorie/:id", (req, res) => {
+app.post("/api/categorie_collection/:id", async (req, res) => {
   const id = req.params.id;
   const { image } = req.body;
-  console.log(req.body);
-
-  const imagePath = path.join(__dirname, "public/categories");
+  console.log(id);
 
   db.query("DELETE FROM categorie WHERE id = ?", [id], (err, result) => {
     if (err) {
@@ -1055,20 +1212,15 @@ app.post("/api/categorie/:id", (req, res) => {
       res.send(result);
     }
   });
-  const imagePathToDelete = path.join(imagePath, image);
-  console.log(imagePathToDelete);
-  // Check if the file exists
-  fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
-    if (err) {
-      // File does not exist
-      console.log("error image deleted !!");
-    }
+  const key = image.split(process.env.DO_SPACE_ENDPOINT + "/")[1];
 
-    // Delete the file
-    fs.unlink(imagePathToDelete, () => {
-      console.log("deleted Image!!");
-    });
-  });
+  // Delete old image from S3
+  await s3.send(
+    new DeleteObjectCommand({
+      Bucket: process.env.DO_SPACE_BUCKET,
+      Key: key,
+    })
+  );
 });
 // Assuming you have a connection to your MySQL database (e.g., using `mysql2` or `sequelize`)
 
@@ -1090,10 +1242,26 @@ app.get("/api/interface/category/:name", async (req, res) => {
 
     if (results.length === 0) {
       return res.status(404).json({ message: "Category not found" });
-    }
+    } else {
+      const processedResult = results.map((product) => {
+        // Parse the qty field
+        let qtyArray;
+        try {
+          qtyArray = JSON.parse(product.qty);
+        } catch (e) {
+          console.error(`Failed to parse qty for product ${product.id}:`, e);
+          qtyArray = [];
+        }
 
-    // Send the results as the response
-    res.json(results);
+        if (Array.isArray(qtyArray) && qtyArray.every((qty) => qty === "0")) {
+          return { ...product, status: "Sold out" };
+        } else {
+          return { ...product };
+        }
+      });
+
+      res.send(processedResult);
+    }
   });
 });
 // Get Genre By: homme,femme,enfant of Products
@@ -1113,8 +1281,26 @@ app.get("/api/interface/genre/:genre", (req, res) => {
   db.query(query, [`%${genre}%`, `%${genresReversed}%`], (err, results) => {
     if (err) {
       return res.status(500).send("Error fetching products by genre");
+    } else {
+      const processedResult = results.map((product) => {
+        // Parse the qty field
+        let qtyArray;
+        try {
+          qtyArray = JSON.parse(product.qty);
+        } catch (e) {
+          console.error(`Failed to parse qty for product ${product.id}:`, e);
+          qtyArray = [];
+        }
+
+        if (Array.isArray(qtyArray) && qtyArray.every((qty) => qty === "0")) {
+          return { ...product, status: "Sold out" };
+        } else {
+          return { ...product };
+        }
+      });
+
+      res.send(processedResult);
     }
-    res.json(results);
   });
 });
 app.delete("/api/categorie/:produit_id/:categoryName", (req, res) => {
@@ -1165,18 +1351,21 @@ app.get("/api/collections", (req, res) => {
 app.post(
   "/api/create-collection",
   upload.single("image_category"),
-  (req, res) => {
-    const image = req.file?.filename || null;
-    console.log(req.body);
-    console.log(image);
+  async (req, res) => {
+    const imageFile = req.file; // Single image
 
+    console.log(req.body);
+    // Upload single image if available
+    const imageUrl = imageFile
+      ? await uploadImage(imageFile, "collections")
+      : null;
     const meta_image = req.body.meta_image_category;
     const meta_description = req.body.meta_image_description;
     const name_category = req.body.name_category;
 
     db.query(
-      `insert into collection(name,image,meta_image,meta_description) values(?,?,?,?)`,
-      [name_category, image, meta_image, meta_description],
+      `INSERT INTO collection(name, image, meta_image, meta_description) VALUES (?, ?, ?, ?)`,
+      [name_category, imageUrl, meta_image, meta_description],
       (err, result, fields) => {
         if (err) {
           console.log(err);
@@ -1188,12 +1377,11 @@ app.post(
     );
   }
 );
+
 app.put(
   "/api/update-colection/:id",
   upload.single("image_category"),
-  (req, res) => {
-    const imagePath = path.join(__dirname, "public/categories");
-
+  async (req, res) => {
     const id = req.params.id;
     const upload_image = req.body.upload_image;
     const oldimage = req.body.oldimage;
@@ -1214,27 +1402,32 @@ app.put(
         const uploadImageBoolean = upload_image === "true";
         if (uploadImageBoolean) {
           console.log("hamiiiiiiiid");
+
           console.log(req.file); // Access the uploaded file
 
           if (req.file) {
-            const image = req.file.filename;
-            const imagePathToDelete = path.join(imagePath, oldimage);
+            const imageFile = req.file; // Single image
 
-            console.log(imagePathToDelete);
-            // Check if the file exists and delete it
-            fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
+            const imageUrl = imageFile
+              ? uploadImage(imageFile, "collections")
+              : null;
+            const key = oldimage.split(process.env.DO_SPACE_ENDPOINT + "/")[1];
+
+            console.log("image:", oldimage, "key:", key);
+            const params = {
+              Bucket: process.env.DO_SPACE_BUCKET,
+              Key: key,
+            };
+
+            s3.deleteObject(params, (err, data) => {
               if (err) {
-                console.log("error image deleted !!");
-              } else {
-                fs.unlink(imagePathToDelete, () => {
-                  console.log("deleted Image!!");
-                });
+                return res.status(500).send(err);
               }
             });
 
             db.query(
               `UPDATE collection SET image = ? WHERE id = ?`,
-              [image, id],
+              [imageUrl, id],
               (err, result) => {
                 if (err) {
                   console.log(err);
@@ -1311,9 +1504,6 @@ app.post("/api/collection/:id", (req, res) => {
     });
   });
 });
-// Assuming you have a connection to your MySQL database (e.g., using `mysql2` or `sequelize`)
-
-// Express.js Route
 app.get("/api/interface/collection/:name", async (req, res) => {
   const categoryName = req.params.name;
   const query = `
@@ -1390,15 +1580,15 @@ app.get("/api/blogs", (req, res) => {
     res.json(results);
   });
 });
-app.post("/api/create-blog", upload.single("image_blog"), (req, res) => {
-  const image = req.file?.filename || null;
-  console.log(image);
+app.post("/api/create-blog", upload.single("image_blog"), async (req, res) => {
+  const imageFile = req.file;
   const { meta_image_blog, title, description, categoryId, date_creation } =
     req.body;
+  const imageUrl = imageFile ? await uploadImage(imageFile, "blogs") : null;
 
   db.query(
     `insert into blog(title,image,description,meta_image,date_created,categorie_blog_id) values(?,?,?,?,?,?)`,
-    [title, image, description, meta_image_blog, date_creation, categoryId],
+    [title, imageUrl, description, meta_image_blog, date_creation, categoryId],
     (err, result, fields) => {
       if (err) {
         console.log(err);
@@ -1433,34 +1623,77 @@ app.put("/api/update-blog/:id", upload.single("image_blog"), (req, res) => {
       }
 
       // If the image needs to be updated
-      if (upload_image === "true" && req.file) {
-        const image = req.file.filename;
-        const imagePathToDelete = path.join(imagePath, oldimage);
+      //   if (upload_image === "true" && req.file) {
+      //     const image = req.file.filename;
+      //     const imagePathToDelete = path.join(imagePath, oldimage);
 
-        // Delete the old image
-        fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
-          if (!err) {
-            fs.unlink(imagePathToDelete, () => {
-              console.log("Deleted old image");
-            });
+      //     // Delete the old image
+      //     fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
+      //       if (!err) {
+      //         fs.unlink(imagePathToDelete, () => {
+      //           console.log("Deleted old image");
+      //         });
+      //       }
+      //     });
+
+      //     // Update the blog image
+      //     db.query(
+      //       `UPDATE blog SET image = ? WHERE id = ?`,
+      //       [image, id],
+      //       (err, result) => {
+      //         if (err) {
+      //           console.log(err);
+      //           return res.status(500).send(err);
+      //         }
+
+      //         // After updating the image, fetch the updated blog to return it
+      //         db.query(
+      //           `SELECT blog.*, collection.name
+      // FROM blog
+      // JOIN collection ON blog.categorie_blog_id = collection.id where blog.id = ?`,
+      //           [id],
+      //           (err, updatedBlog) => {
+      //             if (err) {
+      //               console.log(err);
+      //               return res.status(500).send(err);
+      //             }
+      //             res.json(updatedBlog[0]); // Return the updated blog data
+      //           }
+      //         );
+      //       }
+      //     );
+      //   }
+      if (req.file) {
+        const imageFile = req.file; // Single image
+
+        const imageUrl = imageFile ? uploadImage(imageFile, "blogs") : null;
+        const key = oldimage.split(process.env.DO_SPACE_ENDPOINT + "/")[1];
+
+        console.log("image:", oldimage, "key:", key);
+        const params = {
+          Bucket: process.env.DO_SPACE_BUCKET,
+          Key: key,
+        };
+
+        s3.deleteObject(params, (err, data) => {
+          if (err) {
+            return res.status(500).send(err);
           }
         });
 
-        // Update the blog image
         db.query(
           `UPDATE blog SET image = ? WHERE id = ?`,
-          [image, id],
+          [imageUrl, id],
           (err, result) => {
             if (err) {
               console.log(err);
               return res.status(500).send(err);
             }
-
             // After updating the image, fetch the updated blog to return it
             db.query(
-              `SELECT blog.*, collection.name 
-    FROM blog
-    JOIN collection ON blog.categorie_blog_id = collection.id where blog.id = ?`,
+              `SELECT blog.*, collection.name
+            FROM blog
+            JOIN collection ON blog.categorie_blog_id = collection.id where blog.id = ?`,
               [id],
               (err, updatedBlog) => {
                 if (err) {
@@ -1493,12 +1726,10 @@ app.put("/api/update-blog/:id", upload.single("image_blog"), (req, res) => {
 });
 
 //delete a blog
-app.post("/api/blog/:id", (req, res) => {
+app.post("/api/blog/:id", async (req, res) => {
   const id = req.params.id;
   const { image } = req.body;
   console.log(req.body);
-
-  const imagePath = path.join(__dirname, "public/blogs");
 
   db.query("DELETE FROM blog WHERE id = ?", [id], (err, result) => {
     if (err) {
@@ -1507,20 +1738,15 @@ app.post("/api/blog/:id", (req, res) => {
       res.send(result);
     }
   });
-  const imagePathToDelete = path.join(imagePath, image);
-  console.log(imagePathToDelete);
-  // Check if the file exists
-  fs.access(imagePathToDelete, fs.constants.F_OK, (err) => {
-    if (err) {
-      // File does not exist
-      console.log("error image deleted !!");
-    }
+  const key = image.split(process.env.DO_SPACE_ENDPOINT + "/")[1];
 
-    // Delete the file
-    fs.unlink(imagePathToDelete, () => {
-      console.log("deleted Image!!");
-    });
-  });
+  // Delete old image from S3
+  await s3.send(
+    new DeleteObjectCommand({
+      Bucket: process.env.DO_SPACE_BUCKET,
+      Key: key,
+    })
+  );
 });
 
 app.listen(port, () => {

@@ -7,13 +7,14 @@ import { config_url } from "../../config";
 import axios from "axios";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Modal from "@mui/material/Modal";
+
 import Swal from "sweetalert2";
 import {
   RiAddCircleFill,
   RiDeleteBin6Fill,
   RiEdit2Line,
   RiEyeOffLine,
-  RiEyeLine,
   RiCheckDoubleFill,
   RiCloseLargeFill,
 } from "react-icons/ri";
@@ -21,17 +22,29 @@ import { Tooltip, Typography } from "@mui/material";
 import SelectOpt from "react-select";
 
 import { detailsProduct } from "../../slices/detailsProduct";
+
+const style = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 400,
+  bgcolor: "background.paper",
+  border: "2px solid #000",
+  boxShadow: 24,
+  p: 4,
+};
 function ListProduits() {
   const [listProds, setListProds] = useState([]);
-  console.log(listProds);
   const [listFiltred, setListFiltred] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectVille, setSelectVille] = useState("");
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [selectedCollections, setSelectedCollections] = useState([]);
+  const [image, setImage] = useState("");
+
+  const [open, setOpen] = useState(false);
 
   const [disable_button, setDisable] = useState(true);
-  const [category, setSelectCategory] = useState("Tous");
   const [rowSelectionModel, setRowSelectionModel] = useState([]);
   console.log(rowSelectionModel);
   const navigate = useNavigate();
@@ -46,6 +59,18 @@ function ListProduits() {
         await setListFiltred(res.data);
       });
   }, []);
+
+  useEffect(() => {
+    console.log("rowSelectionModel:", rowSelectionModel); // Ensure this logs the correct value
+    if (rowSelectionModel.length === 0) {
+      setDisable(true);
+      console.log("Hamiiiiid - Disable button");
+    } else {
+      setDisable(false);
+      console.log("Hamiiiiid - Enable button");
+    }
+  }, [rowSelectionModel]);
+
   const deleteEmployee = (id, image, images) => {
     axios
       .post(`${config_url}/api/product/${id}`, {
@@ -55,6 +80,15 @@ function ListProduits() {
       .then(() => {
         setListFiltred(listFiltred.filter((row) => row.id !== id));
       });
+  };
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const handleLoadModalImage = async (image) => {
+    await handleOpen();
+
+    await setImage(image);
   };
   const hideninstock = (id) => {
     axios
@@ -109,22 +143,7 @@ function ListProduits() {
       }
     });
   }
-  const handleOutOfStock = () => {
-    console.log(rowSelectionModel);
-    axios
-      .put(`${config_url}/api/out_of_stock`, {
-        out_of_stock: rowSelectionModel,
-      })
-      .then(() => {
-        toast.success("Out of Stock Products !!", {
-          position: "top-right",
-        });
-        setDisable(true);
-        setTimeout(() => {
-          window.location.reload(false);
-        }, "4000");
-      });
-  };
+
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -148,10 +167,6 @@ function ListProduits() {
   const details = (dts) => {
     dispatch(detailsProduct(dts));
     navigate("/app/changer-produit/" + dts.id);
-  };
-  const detailsProd = (dts) => {
-    dispatch(detailsProduct(dts));
-    navigate("/app/details-produit/" + dts.id);
   };
 
   useEffect(() => {
@@ -212,10 +227,16 @@ function ListProduits() {
       headerName: "Produit:",
       headerClassName: "super-app-theme--cell",
 
-      width: 200,
+      width: 320,
       renderCell: (params) => {
         return (
-          <div style={{ whiteSpace: "pre-line", overflow: "hidden" }}>
+          <div
+            style={{
+              marginTop: "4px",
+              whiteSpace: "pre-line",
+              overflow: "hidden",
+            }}
+          >
             <Typography>{params.row.name}</Typography>
           </div>
         );
@@ -226,21 +247,21 @@ function ListProduits() {
       headerName: "Category:",
       headerClassName: "super-app-theme--cell",
 
-      width: 140,
+      width: 200,
     },
     {
-      field: "status",
+      field: "status_model",
       headerName: "Status:",
       headerClassName: "super-app-theme--cell",
 
-      width: 80,
+      width: 100,
     },
     {
       field: "price",
       headerName: "Price:",
       headerClassName: "super-app-theme--cell",
 
-      width: 100,
+      width: 80,
     },
     {
       field: "price_promo",
@@ -279,13 +300,14 @@ function ListProduits() {
         return (
           <div
             style={{
-              backgroundImage: `url(${config_url}/images/${params.row.image})`,
+              backgroundImage: `url(${params.row.image})`,
               width: "50px",
               height: "50px",
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
               backgroundSize: "cover",
             }}
+            onClick={() => handleLoadModalImage(params.row.image)}
           ></div>
         );
       },
@@ -293,11 +315,11 @@ function ListProduits() {
     {
       field: "modification",
       headerName: "Modifications",
-      width: 220,
+      width: 160,
       renderCell: (params) => {
         return (
           <>
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center gap-4 mt-2 mr-8">
               <div>
                 <RiEdit2Line
                   className="collabListEdit"
@@ -329,16 +351,6 @@ function ListProduits() {
                   </div>
                 </Tooltip>
               </div>
-              <div>
-                <Tooltip title="Informations Sur Produirt" placement="top">
-                  <div>
-                    <RiEyeLine
-                      className="collabListEdit"
-                      onClick={() => detailsProd(params.row)}
-                    />
-                  </div>
-                </Tooltip>
-              </div>
             </div>
           </>
         );
@@ -347,6 +359,16 @@ function ListProduits() {
   ];
   return (
     <Fragment>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={style}>
+          <img src={`${image}`} />
+        </Box>
+      </Modal>
       <div className="page__main">
         <div className="flex items-center justify-center gap-10 mb-10">
           <Link to="/app/ajoute-produit">
@@ -393,7 +415,7 @@ function ListProduits() {
         <Box
           sx={{
             height: "auto",
-            width: "auto",
+            width: "70vw",
             "& .super-app-theme--cell": {
               backgroundColor: "#fff",
               color: "#1a3e72",
@@ -415,9 +437,7 @@ function ListProduits() {
             checkboxSelection
             onRowSelectionModelChange={(newRowSelectionModel) => {
               setRowSelectionModel(newRowSelectionModel);
-              setDisable(false);
             }}
-            rowSelectionModel={rowSelectionModel}
           />
         </Box>
       </div>

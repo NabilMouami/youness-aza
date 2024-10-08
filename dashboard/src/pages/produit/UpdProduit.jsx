@@ -1,8 +1,12 @@
 import React, { useState, Fragment, useEffect } from "react";
-import axios from "axios";
 import Chip from "@mui/material/Chip";
 import Paper from "@mui/material/Paper";
 import Button from "@mui/material/Button";
+import Box from "@mui/material/Box";
+import axios from "axios";
+import FormControl from "@mui/material/FormControl";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 
 import { styled } from "@mui/material/styles";
 import ClipLoader from "react-spinners/ClipLoader";
@@ -18,14 +22,15 @@ import { AiFillFileImage } from "react-icons/ai";
 import { RiCloseLargeFill } from "react-icons/ri";
 import UpdCategories from "./UpdCategories";
 import UpdGroupProd from "./UpdGroupProd";
-
-const ListItem = styled("li")(({ theme }) => ({
-  margin: theme.spacing(0.5),
-}));
+import UpdQtyShoes from "./UpdQtyShoes";
 
 function UpdProduit() {
   const Detail = useSelector((state) => state.Load);
   const { Col } = Detail;
+  const mySizes = JSON.parse(Col.nemuro_shoes); // Sizes array
+  const myQuantities = JSON.parse(Col.qty); // Quantities array
+
+  console.log(mySizes, myQuantities);
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [categories, setCategories] = useState([]);
   const [groupes, setGroupes] = useState([]);
@@ -34,12 +39,14 @@ function UpdProduit() {
     Col.category_names.split(", ") || []
   );
   const [showSpinner, setShowSpinner] = useState(true);
+  const [type, setSelectType] = useState(Col.type);
+  const [genre, setSelectGenre] = useState(Col.genre);
+  const [status, setSelectStatus] = useState(Col.status_model);
 
   const [showSelectCategories, setShowSelectCategories] = useState(false);
   const [showSelectGroupes, setShowSelectGroupes] = useState(false);
   const [group_id, setGroupId] = useState("");
 
-  const [category, setSelectCategory] = useState(Col.category);
   const [nom, setNom] = useState(Col.name);
   const [productSlug, setProductSlug] = useState(Col.name_by_filtered);
 
@@ -49,11 +56,10 @@ function UpdProduit() {
 
   const [out_of_stock, setOut] = useState(Col.out_stock);
 
-  const [image, setImage] = useState(`${config_url}/images/${Col.image}`);
+  const [image, setImage] = useState(`${Col.image}`);
   const [oldImage, setOldImage] = useState(Col.image);
   const [upload_image, setUploadedImage] = useState(false);
   const [fileName, setFileName] = useState("No selected file");
-  const [disable_uploas_images, setDisableImages] = useState(true);
   const [changer_images, setChangerImages] = useState(false);
   const [changer_categories, setChangerCategories] = useState(false);
   const [changer_groupes, setChangerGroupes] = useState(false);
@@ -79,6 +85,9 @@ function UpdProduit() {
     formdata.append("upload_image", upload_image);
     formdata.append("nom", nom);
     formdata.append("productSlug", productSlug);
+    formdata.append("status", status);
+    formdata.append("type", type);
+    formdata.append("genre", genre);
 
     formdata.append("description", description);
 
@@ -122,7 +131,6 @@ function UpdProduit() {
     return () => clearTimeout(timer);
   }, []);
   const removeImage = (filenameToRemove) => {
-    setDisableImages(false);
     const data = JSON.parse(selectedFiles).filter(
       (item) => item !== filenameToRemove
     );
@@ -190,10 +198,6 @@ function UpdProduit() {
       chips.filter((chip) => chip !== chipToDelete)
     );
     await setShowSelectCategories(true);
-    // await popup(chipToDelete.product_id, chipToDelete.related_id);
-    // setTimeout(() => {
-    //   window.location.reload(false);
-    // }, "2000");
   };
   const convertToSlug = (name) => {
     return name
@@ -208,6 +212,9 @@ function UpdProduit() {
   };
   const handleSelectOutOfStock = (e) => {
     setOut(e.target.value);
+  };
+  const handleSelectGenre = (e) => {
+    setSelectGenre(e.target.value);
   };
   const handleImage = (file) => {
     setUploadedImage(true);
@@ -225,12 +232,19 @@ function UpdProduit() {
       });
       const result = await response.json();
       setSelectedFiles(result[0]?.images);
-      setChangerImages(false);
       console.log(result);
     } catch (error) {
       console.error("Error:", error);
     }
   };
+
+  const handleSelectStatus = (e) => {
+    setSelectStatus(e.target.value);
+  };
+  const handleSelectType = (e) => {
+    setSelectType(e.target.value);
+  };
+
   //Options Colections
   const selOptions = [];
   const ids = categories?.map((o) => o.name);
@@ -266,6 +280,8 @@ function UpdProduit() {
   }
   const handle = (e) => {
     const value = e.map((option) => option.label);
+    console.log("values of categories selected: " + value);
+
     setSelectVille(value);
     setSelectedCategories(e);
     setChangerCategories(true);
@@ -279,33 +295,12 @@ function UpdProduit() {
     setGroupId(e.id);
   };
 
-  const handleRemoveOption = (removedValue) => {
-    const updatedSelectedOptions = affectedCategories.filter(
-      (option) => option.id !== removedValue
-    );
-    setAffectedCategories(updatedSelectedOptions);
-  };
-
-  const customMultiValue = (props) => (
-    <div className="flex gap-2 ml-2 font-bold">
-      <div>{props.data.label}</div>
-      <button
-        onClick={(e) => {
-          props.removeProps.onClick();
-          handleRemoveOption(props.data.id);
-        }}
-        className="w-8 h-8 rounded-full text-black p-1 bg-red-400"
-      >
-        X
-      </button>
-    </div>
-  );
   return (
     <Fragment>
       <div className="page__main">
         <h1>
           Change Information About:{" "}
-          <span className="text-red-400 font-sans"> {Col.nom}</span>
+          <span className="text-red-400 font-sans"> {nom}</span>
         </h1>
         <form
           onSubmit={handleUpload}
@@ -363,7 +358,33 @@ function UpdProduit() {
                 placeholder="Price Promo:"
               />
             </div>
+            <Box sx={{ ml: 2, minWidth: 220 }}>
+              <FormControl sx={{ minWidth: 220 }}>
+                <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
+                  Status:
+                </label>{" "}
+                <Select value={status} onChange={handleSelectStatus}>
+                  <MenuItem value="old">Old</MenuItem>
+
+                  <MenuItem value="new">New</MenuItem>
+                  <MenuItem value="latest-arrival">Latest Arrival</MenuItem>
+                  <MenuItem value="top-product">Top Products</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+            <Box sx={{ ml: 2, minWidth: 220 }}>
+              <FormControl sx={{ minWidth: 220 }}>
+                <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
+                  Type:
+                </label>{" "}
+                <Select value={type} onChange={handleSelectType}>
+                  <MenuItem value="0">Sneakers</MenuItem>
+                  <MenuItem value="1">Accessoires</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
           </div>
+          <UpdQtyShoes mySizes={mySizes} myQuantities={myQuantities} />
           <div className="bg-gray-300 rounded-2xl">
             <h1>Collections</h1>
             <div className="flex items-center justify-center gap-4  p-20">
@@ -390,7 +411,6 @@ function UpdProduit() {
                             options={selOptions}
                             isMulti
                             onChange={handle}
-                            components={{ MultiValue: customMultiValue }}
                           />
                         </div>
                       )}
@@ -398,7 +418,7 @@ function UpdProduit() {
                   )}
                 </div>
               </div>
-              <UpdCategories />
+              <UpdCategories affectedCategories={affectedCategories} />
             </div>
           </div>
 
@@ -450,6 +470,25 @@ function UpdProduit() {
               >
                 <option value="1">In Stock</option>
                 <option value="0">Out Stock</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-center items-center">
+            <div className="w-90 flex flex-col items-center px-3">
+              <label className="ml-12 mb-2 block text-lg font-bold text-black">
+                Genre:
+              </label>
+
+              <select
+                className="ml-10"
+                value={genre}
+                onChange={handleSelectGenre}
+              >
+                <option value="homme">Homme</option>
+                <option value="femme">Femme</option>
+                <option value="enfants">Enfant</option>
+                <option value="homme, femme">Homme & Femme</option>
+                <option value="femme, homme">Femme & Homme</option>
               </select>
             </div>
           </div>
@@ -508,7 +547,6 @@ function UpdProduit() {
                   <input
                     className="form"
                     type="file"
-                    disabled={disable_uploas_images}
                     onChange={({ target: { files } }) => {
                       if (files) {
                         setFileImage(files[0]);
@@ -521,7 +559,7 @@ function UpdProduit() {
                       className="bg-red-500  text-white font-bold py-2 px-4 ml-4 rounded-full"
                       onClick={() => handleImages()}
                     >
-                      Oui Changer Image
+                      Oui Affected Image
                     </button>
                   )}
                 </div>
@@ -535,7 +573,7 @@ function UpdProduit() {
                         }}
                       >
                         <img
-                          src={`${config_url}/images/${file}`}
+                          src={`${file}`}
                           alt={`Image ${index}`}
                           className="rounded-2xl w-40 h-40 m-10"
                         />

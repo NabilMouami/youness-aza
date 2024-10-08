@@ -92,23 +92,34 @@ function EditOrder() {
     setSelectStatus(e.target.value);
     setChangedSelectStatus(true);
   };
+  // maked Customer as Paid Status and Earn Coins
+  const makeAsPaid = (order_num, customerId, coinsPayed) => {
+    axios
+      .put(`${config_url}/api/orders/ispaid/${order_num}/${customerId}`, {
+        amountSpent: total,
+        coins_payed: coinsPayed,
+        infos: productList,
+      })
+      .then(() => {
+        toast.success("Maked Order Is Paid !!", {
+          position: "top-right",
+        });
+      });
+  };
+
   // Change Delivery Status
-  const deliceryStatus = () => {
-    console.log("deliveryStatus:", {
-      order_num: Col.order_num,
-      prod_id: listOrders[0]?.prod_id,
-      custom_id: listOrders[0]?.custom_id,
-      delivery_status: status_dlivery,
-    });
+  const deliveryStatus = () => {
+    if (status_dlivery === "DELIVERED") {
+      makeAsPaid(listOrders[0]?.order_num, Col.custom_id, Col.coins_payed);
+    }
     axios
       .post(`${config_url}/api/orders/delivery_status`, {
         order_num: Col.order_num,
-        prod_id: listOrders[0]?.prod_id,
         custom_id: listOrders[0]?.custom_id,
         delivery_status: status_dlivery,
       })
       .then(() => {
-        toast.success("Discount Price Product !!", {
+        toast.success("Order Delivery Status Changed !!", {
           position: "top-right",
         });
       });
@@ -174,20 +185,6 @@ function EditOrder() {
       });
     }
   }
-  // maked Customer as Paid Status and Earn Coins
-  const makeAsPaid = (order_num, customerId, coinsPayed) => {
-    axios
-      .put(`${config_url}/api/orders/ispaid/${order_num}/${customerId}`, {
-        amountSpent: total,
-        coins_payed: coinsPayed,
-        infos: productList,
-      })
-      .then(() => {
-        toast.success("Maked Order Is Paid !!", {
-          position: "top-right",
-        });
-      });
-  };
 
   return (
     <Fragment>
@@ -195,6 +192,7 @@ function EditOrder() {
         <EditItemDiscount
           closeModal={closeModal}
           setDiscount={setDiscount}
+          rowOrder={rowOrder}
           discount={discount}
           productId={listOrders[0]?.prod_id}
           customerId={listOrders[0]?.custom_id}
@@ -228,6 +226,8 @@ function EditOrder() {
           openDelete={openDelete}
           handleCloseDelete={handleCloseDelete}
           rowDeleteItem={rowDeleteItem}
+          listOrders={listOrders}
+          setListOrders={setListOrders}
         />
       )}{" "}
       <div className="flex items-center justify-center bold font-sans text-2xl text-black m-6">
@@ -403,7 +403,7 @@ function EditOrder() {
                   alignItems="center"
                   margin={2}
                 >
-                  <Button
+                  {/* <Button
                     color="primary"
                     variant="contained"
                     onClick={() =>
@@ -416,7 +416,7 @@ function EditOrder() {
                     startIcon={<AiFillCheckSquare />}
                   >
                     Make as paid
-                  </Button>
+                  </Button> */}
                   <Button
                     color="error"
                     variant="contained"
@@ -450,7 +450,7 @@ function EditOrder() {
 
             {changed_status_dlivery && (
               <Button
-                onClick={() => deliceryStatus()}
+                onClick={() => deliveryStatus()}
                 variant="contained"
                 color="success"
                 endIcon={<RiSendPlaneFill />}

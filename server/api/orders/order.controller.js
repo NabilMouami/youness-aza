@@ -253,8 +253,8 @@ module.exports = {
     });
   },
   deleteItemFromOrder: (req, res) => {
-    const { prod_id, custom_id, order_num } = req.params;
-    let data = { prod_id, custom_id, order_num };
+    const { prod_id, custom_id, size, order_num } = req.params;
+    let data = { prod_id, custom_id, order_num, size };
     removeItemFromOrder(data, (err, results) => {
       if (err) {
         console.log(err);

@@ -2,7 +2,6 @@ import React, { Fragment, useState } from "react";
 import Modal from "@mui/material/Modal";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
-
 import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
@@ -11,6 +10,7 @@ import { config_url } from "../../config";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { AiOutlineClose } from "react-icons/ai";
+import CircularProgress from "@mui/material/CircularProgress"; // Import CircularProgress
 
 const style = {
   position: "absolute",
@@ -29,19 +29,30 @@ function AnnulerOrder({ closeModalAnnuler, customerId, productList }) {
   const Detail = useSelector((state) => state.Load);
   const { Col } = Detail;
   const [justification, setJustification] = useState("");
+  const [loading, setLoading] = useState(false); // Add loading state
 
   const AnnulerCommande = () => {
-    axios
-      .put(`${config_url}/api/orders/annuler/${Col.order_num}/${customerId}`, {
-        justification: justification,
-        infos: productList,
-      })
-      .then(() => {
-        toast.success("Order Is Canceled !!", {
-          position: "top-right",
+    setLoading(true); // Set loading to true when the button is clicked
+
+    setTimeout(() => {
+      axios
+        .put(
+          `${config_url}/api/orders/annuler/${Col.order_num}/${customerId}`,
+          {
+            justification: justification,
+            infos: productList,
+          }
+        )
+        .then(() => {
+          toast.success("Order Is Canceled !!", {
+            position: "top-right",
+          });
+          closeModalAnnuler();
+        })
+        .finally(() => {
+          setLoading(false); // Set loading to false after the request is complete
         });
-        closeModalAnnuler();
-      });
+    }, 2000); // Simulate a delay of 2 seconds
   };
 
   return (
@@ -84,9 +95,10 @@ function AnnulerOrder({ closeModalAnnuler, customerId, productList }) {
             <Button
               variant="outlined"
               color="error"
-              onClick={() => AnnulerCommande()}
+              onClick={AnnulerCommande}
+              disabled={loading} // Disable the button when loading
             >
-              Cancel Order
+              {loading ? <CircularProgress size={24} /> : "Cancel Order"}
             </Button>
           </div>
         </Box>

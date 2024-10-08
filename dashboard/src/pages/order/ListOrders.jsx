@@ -423,6 +423,9 @@ function ListOrders() {
             rows={filteredOrders}
             columns={columns}
             getRowId={(row) => row.date_order}
+            getRowClassName={(params) =>
+              params.row.delivery_status === "CANCEL" ? "canceled-row" : ""
+            }
           />
         </Box>
       </div>

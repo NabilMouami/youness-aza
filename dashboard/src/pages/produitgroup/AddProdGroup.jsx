@@ -1,28 +1,34 @@
 import { Fragment, useState, useEffect } from "react";
 import { DataGrid } from "@mui/x-data-grid";
-import TextField from "@mui/material/TextField";
+import Modal from "@mui/material/Modal";
 
-import { Link, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { config_url } from "../../config";
 import axios from "axios";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Swal from "sweetalert2";
-import {
-  RiAddCircleFill,
-  RiDeleteBin6Fill,
-  RiEdit2Line,
-  RiEyeOffLine,
-  RiEyeLine,
-  RiCheckDoubleFill,
-  RiCloseLargeFill,
-} from "react-icons/ri";
+import { RiCheckDoubleFill, RiCloseLargeFill } from "react-icons/ri";
 import { Tooltip } from "@mui/material";
 import SelectOpt from "react-select";
+
+const style = {
+  position: "absolute",
+  top: "50%",
+  left: "50%",
+  transform: "translate(-50%, -50%)",
+  width: 400,
+  bgcolor: "background.paper",
+  border: "2px solid #000",
+  boxShadow: 24,
+  p: 4,
+};
 function AddProdGroup() {
   const [listProds, setListProds] = useState([]);
+  const [image, setImage] = useState("");
+
+  const [open, setOpen] = useState(false);
+
   const [listFiltred, setListFiltred] = useState([]);
   const [disable_button, setDisable] = useState(true);
   const [groupes, setGroupes] = useState([]);
@@ -57,6 +63,14 @@ function AddProdGroup() {
       });
   }, []);
 
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  const handleLoadModalImage = async (image) => {
+    await handleOpen();
+
+    await setImage(image);
+  };
   const selOptions = [];
   const ids = groupes?.map((o) => o.name);
   const filtered = groupes?.filter(
@@ -155,13 +169,14 @@ function AddProdGroup() {
         return (
           <div
             style={{
-              backgroundImage: `url(${config_url}/images/${params.row.image})`,
+              backgroundImage: `url(${params.row.image})`,
               width: "50px",
               height: "50px",
               backgroundPosition: "center",
               backgroundRepeat: "no-repeat",
               backgroundSize: "cover",
             }}
+            onClick={() => handleLoadModalImage(params.row.image)}
           ></div>
         );
       },
@@ -169,6 +184,16 @@ function AddProdGroup() {
   ];
   return (
     <Fragment>
+      <Modal
+        open={open}
+        onClose={handleClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={style}>
+          <img src={`${image}`} />
+        </Box>
+      </Modal>
       <div className="page__main">
         <Link to="/app/ajoute-groupe">
           <Button variant="contained">Ajoute Groupe</Button>

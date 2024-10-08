@@ -329,6 +329,7 @@ function increaseProductQuantity(productId, shoeSize, qtyToDecrease) {
         if (index !== null) {
           // Calculate the new quantity by subtracting qtyToDecrease
           const newQty = currentQty + qtyToDecrease;
+          console.log(newQty);
           console.log("newQty are you want to updated:", String(newQty));
           if (newQty >= 0) {
             // Update the quantity for the specific shoe size
@@ -634,7 +635,7 @@ module.exports = {
     const { order_num, prod_id, custom_id, discount } = data;
     const query = `
     UPDATE orders
-    SET total_price = total_price - ?
+    SET total_price = ?
     WHERE order_num = ? AND prod_id = ? AND custom_id = ?
   `;
 
@@ -665,23 +666,19 @@ module.exports = {
     });
   },
   deliveryStatus: (data, callBack) => {
-    const { order_num, prod_id, custom_id, delivery_status } = data;
+    const { order_num, custom_id, delivery_status } = data;
     const query = `
     UPDATE orders
     SET delivery_status = ?
-    WHERE order_num = ? AND prod_id = ? AND custom_id = ?
+    WHERE order_num = ? AND custom_id = ?
   `;
 
-    db.query(
-      query,
-      [delivery_status, order_num, prod_id, custom_id],
-      (err, result) => {
-        if (err) {
-          return callBack(err);
-        }
-        return callBack(null, result);
+    db.query(query, [delivery_status, order_num, custom_id], (err, result) => {
+      if (err) {
+        return callBack(err);
       }
-    );
+      return callBack(null, result);
+    });
   },
   // Update Order's Customer Information
   customerInformation: (data, callBack) => {
@@ -790,6 +787,8 @@ module.exports = {
         if (error) {
           callBack(error);
         }
+        increaseProductQuantity(data.prod_id, data.size, 1);
+
         return callBack(null, results[0]);
       }
     );

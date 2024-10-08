@@ -8,17 +8,24 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { config_url } from "../../config";
-function DeleteItemOrder({ openDelete, handleCloseDelete, rowDeleteItem }) {
-  console.log(rowDeleteItem);
+function DeleteItemOrder({
+  openDelete,
+  handleCloseDelete,
+  rowDeleteItem,
+  setListOrders,
+}) {
   const handleDelete = () => {
     axios
       .delete(
-        `${config_url}/api/orders/${rowDeleteItem.prod_id}/${rowDeleteItem.custom_id}/${rowDeleteItem.order_num}`
+        `${config_url}/api/orders/${rowDeleteItem.prod_id}/${rowDeleteItem.custom_id}/${rowDeleteItem.size}/${rowDeleteItem.order_num}`
       )
       .then((res) => {
         toast.success("Deleted Item From Order(s) !!", {
           position: "top-right",
         });
+        setListOrders((prevOrders) =>
+          prevOrders.filter((item) => item.prod_id !== rowDeleteItem.prod_id)
+        );
         handleCloseDelete();
       });
   };

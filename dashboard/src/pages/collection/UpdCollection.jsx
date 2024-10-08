@@ -37,14 +37,11 @@ function UpdCollection({ closeModal, rowCategory, categories, setCategories }) {
     rowCategory.meta_description
   );
 
-  const [image, setImage] = useState(
-    `${config_url}/categories/${rowCategory.image}`
-  );
+  const [image, setImage] = useState(`${rowCategory.image}`);
   const [fileName, setFileName] = useState("No selected file");
 
   const [oldImage, setOldImage] = useState(rowCategory.image);
   const [upload_image, setUploadedImage] = useState(false);
-  const [file_image, setFileImage] = useState(null);
   const handleChange = async () => {
     const formdata = new FormData();
     formdata.append("image_category", image);
@@ -83,6 +80,9 @@ function UpdCollection({ closeModal, rowCategory, categories, setCategories }) {
       }
     } catch (error) {
       console.error("Error:", error);
+      toast.error("Error updating collection", {
+        position: "top-right",
+      });
     }
   };
 
@@ -151,6 +151,7 @@ function UpdCollection({ closeModal, rowCategory, categories, setCategories }) {
                   files[0] && setFileName(files[0].name);
                   if (files) {
                     handleImage(files[0]);
+                    setUploadedImage(true);
                   }
                 }}
               />
