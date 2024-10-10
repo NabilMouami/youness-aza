@@ -89,7 +89,7 @@ function ListCustomers() {
           <>
             <div className="flex mt-3 gap-4">
               <div>
-                <RiEdit2Line
+                <RiEye2Fill
                   className="collabListEdit"
                   onClick={() => details(params.row)}
                 />
@@ -107,7 +107,7 @@ function ListCustomers() {
                 />
               </div>
               <div>
-                <RiEye2Fill
+                <RiEdit2Line
                   className="collabListDelete"
                   onClick={() => detailsCustomer(params.row)}
                 />
