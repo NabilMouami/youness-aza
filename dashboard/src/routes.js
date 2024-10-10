@@ -2,6 +2,7 @@ import { useRoutes } from "react-router-dom";
 import DashboardLayout from "./layouts/DashboardLayout";
 import PublicRoutesLayout from "./layouts/PublicRoutesLayout";
 import ListUsers from "./pages/auth/ListUsers";
+import AddUser from "./pages/auth/AddUser";
 import AddProduit from "./pages/produit/AddProduit";
 import ListProduits from "./pages/produit/ListProduits";
 import HidenProduits from "./pages/produit/HidenProduits";
@@ -15,7 +16,6 @@ import AddCategory from "./pages/category/AddCategory";
 import AddProdGroup from "./pages/produitgroup/AddProdGroup";
 import AddGroupe from "./pages/produitgroup/AddGroupe";
 import ListOrders from "./pages/order/ListOrders";
-import DetailOrder from "./pages/order/DetailOrder";
 import ListCategories from "./pages/category/ListCategories";
 import EditOrder from "./pages/order/EditOrder";
 import ListCustomers from "./pages/customer/ListCustomers";
@@ -25,6 +25,8 @@ import ListBlogs from "./pages/blog/ListBlogs";
 import ListCollections from "./pages/collection/ListCollections";
 import AddCollection from "./pages/collection/AddCollection";
 import ListProdRelGroup from "./pages/produitgroup/ListProdRelGroup";
+import UpdCustomer from "./pages/customer/UpdCustomer";
+import UpdUser from "./pages/auth/UpdUser";
 export default function Router() {
   return useRoutes([
     {
@@ -32,8 +34,14 @@ export default function Router() {
       element: <DashboardLayout />,
       children: [
         { path: "utilisateurs", element: <ListUsers /> },
+        { path: "ajoute-utilisateur", element: <AddUser /> },
+        { path: "changer-user/:id", element: <UpdUser /> },
         { path: "clients", element: <ListCustomers /> },
         { path: "clients/orders/:id", element: <CustomerDetailsOrder /> },
+        {
+          path: "clients/changer-infos-client/:id",
+          element: <UpdCustomer />,
+        },
         { path: "ajoute-produit", element: <AddProduit /> },
         { path: "list-produits", element: <ListProduits /> },
         { path: "hiden-produits", element: <HidenProduits /> },

@@ -243,7 +243,7 @@ function EditOrder() {
                 <div className="mt-8 flex flex-col gap-4 justify-start">
                   <div className="bg-gray-100 p-4 rounded-2xl flex items-center justify-center justify-around">
                     <img
-                      src={`${config_url}/images/${item.image}`}
+                      src={item.image}
                       alt={item.name}
                       className="w-14 h-14"
                     />

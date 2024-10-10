@@ -40,7 +40,7 @@ module.exports = {
   },
   getUsers: (callBack) => {
     db.query(
-      `select id,nom,prenom,email,password,role from user`,
+      `select id,firstName,lastName,email,role from user`,
       [],
       (error, results, fields) => {
         if (error) {
@@ -53,7 +53,7 @@ module.exports = {
   updateUser: (id, data, callBack) => {
     console.log(data.password);
     db.query(
-      `update user set nom=?, prenom=?, email=?, password=?, role=? where id = ?`,
+      `update user set lastName=?, firstName=?, email=?, password=?, role=? where id = ?`,
       [data.nom, data.prenom, data.email, data.password, data.role, id],
       (error, results, fields) => {
         if (error) {
@@ -65,7 +65,7 @@ module.exports = {
   },
   updateUserWithoutPassword: (id, data, callBack) => {
     db.query(
-      `update user set nom=?, prenom=?, email=?, role=? where id = ?`,
+      `update user set lastName=?, firstName=?, email=?, role=? where id = ?`,
       [data.nom, data.prenom, data.email, data.role, id],
       (error, results, fields) => {
         if (error) {

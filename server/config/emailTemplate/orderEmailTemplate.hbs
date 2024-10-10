@@ -15,7 +15,7 @@
       20px 0; } .order-summary h2 { font-size: 18px; margin: 0 0 10px 0; }
       .order-item { display: flex; justify-content: space-between; margin: 10px
       0; } /* Styling for smaller product images */ .order-item img { width:
-      30px; /* Change size here */ height: 30px; /* Change size here */
+      80px; /* Change size here */ height: 80px; /* Change size here */
       object-fit: cover; } .order-item div { flex: 1; margin-left: 10px; }
       .order-item div p { margin: 0; font-size: 14px; } .total { text-align:
       right; font-size: 16px; font-weight: bold; margin: 10px 0; } .details {
@@ -51,12 +51,9 @@
       </div>
       <div class="details">
         <h3>Payment processing method</h3>
-        <p>COD</p>
+        <p>{{payment_status}}</p>
       </div>
-      <div class="details">
-        <h3>Delivery method</h3>
-        <p>COD</p>
-      </div>
+
       <div class="details">
         <h3>Shipping address</h3>
         <p>Client: {{nom_client}}</p>

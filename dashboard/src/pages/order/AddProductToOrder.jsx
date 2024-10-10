@@ -105,11 +105,7 @@ function AddProductToOrder() {
         alignItems: "flex-start",
       }}
     >
-      <img
-        src={`${config_url}/images/${image}`}
-        alt={label}
-        style={{ width: 50, height: 50 }}
-      />
+      <img src={image} alt={label} style={{ width: 50, height: 50 }} />
       <div>{label}</div>
       <div>
         Available Qty:{" "}

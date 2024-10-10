@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
+
 import Swal from "sweetalert2";
 import axios from "axios";
 import { RiChatDeleteFill, RiEdit2Line } from "react-icons/ri";
@@ -9,8 +11,6 @@ const TableComponent = ({ sizes, quantities, onEditClick }) => {
   const Detail = useSelector((state) => state.Load);
   const { Col } = Detail;
   const [items, setItems] = useState([]);
-  const [sizeShoes, setSizeShoes] = useState([]); // To hold the sizes
-  const [sizeQuantities, setSizeQuantities] = useState([]); // To hold the quantities
   const [showSaveSizes, setShowSiveSizes] = useState(false);
   // Initialize items with sizes and quantities when component mounts
   useEffect(() => {
@@ -30,14 +30,6 @@ const TableComponent = ({ sizes, quantities, onEditClick }) => {
     ]);
     setShowSiveSizes(true);
   };
-
-  // Update sizeShoes and sizeQuantities arrays based on current items
-  useEffect(() => {
-    const sizeValues = items.map((item) => `"${item.value}"`);
-    const quantityValues = items.map((item) => `"${item.quantity}"`);
-    setSizeShoes(sizeValues);
-    setSizeQuantities(quantityValues);
-  }, [items]);
 
   // Handler for quantity input change
   const handleQuantityChange = (event, index) => {
@@ -70,7 +62,9 @@ const TableComponent = ({ sizes, quantities, onEditClick }) => {
         qty,
       })
       .then((response) => {
-        console.log(response.data);
+        toast.success("Sizes Changed Sucesefully !!", {
+          position: "top-right",
+        });
       })
       .catch((error) => {
         console.error("There was an error!", error);
@@ -84,7 +78,6 @@ const TableComponent = ({ sizes, quantities, onEditClick }) => {
           <tr>
             <th className="py-2 px-4 border-b">Size</th>
             <th className="py-2 px-4 border-b">Quantity</th>
-            <th className="py-2 px-4 border-b">Modifications</th>
           </tr>
         </thead>
         <tbody>
@@ -95,14 +88,6 @@ const TableComponent = ({ sizes, quantities, onEditClick }) => {
               </td>
               <td className="py-2 px-4 border-b">
                 {item.quantity || quantities[index]}
-              </td>
-              <td className="py-2 px-4 border-b">
-                <div className="flex items-center justify-center mt-3 gap-4">
-                  <RiEdit2Line
-                    className="collabListEdit"
-                    onClick={() => onEditClick(item.value, item.quantity)}
-                  />
-                </div>
               </td>
             </tr>
           ))}

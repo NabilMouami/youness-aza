@@ -40,7 +40,7 @@ async function sendOrderEmail(orderData) {
     order_num,
     total_price,
     items,
-
+    payment_status,
     ville,
     adresse,
     telephone,
@@ -82,6 +82,7 @@ async function sendOrderEmail(orderData) {
     date_order,
     items,
     ville,
+    payment_status,
     adresse,
     telephone,
     code_postal,
@@ -111,6 +112,7 @@ async function sendOrderEmailToCustomer(orderData) {
   const ville = orderData?.infos[0]?.ville;
   const telephone = orderData?.infos[0]?.telephone;
   const code_postal = orderData?.infos[0]?.code_postal;
+  const payment_status = orderData?.infos[0]?.payment_status;
 
   const { amountSpent, infos, order_num } = orderData;
 
@@ -148,7 +150,7 @@ async function sendOrderEmailToCustomer(orderData) {
     date_order,
     infos,
     coinsEarned,
-
+    payment_status,
     ville,
     adresse,
     telephone,
@@ -159,7 +161,7 @@ async function sendOrderEmailToCustomer(orderData) {
   const mailOptions = {
     from: "nabilmouami353@gmail.com",
     to: "bill.mou33@gmail.com",
-    subject: "New Order Created",
+    subject: "Invoice Order Yazasneakers",
     html: html,
   };
 
@@ -223,7 +225,7 @@ async function sendCanceledOrderToCustomer(orderData) {
   const mailOptions = {
     from: "nabilmouami353@gmail.com",
     to: "bill.mou33@gmail.com",
-    subject: "New Order Created",
+    subject: "Your Order is Canceled From Yazasneakers.",
     html: html,
   };
 

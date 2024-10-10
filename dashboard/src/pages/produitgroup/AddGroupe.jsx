@@ -15,7 +15,7 @@ function AddGroupe() {
         groupe,
       })
       .then((res) => {
-        toast.success("Hiden In Stock Product !!");
+        toast.success("Groupe Name Is Added !!");
         setGroupe("");
       });
   };

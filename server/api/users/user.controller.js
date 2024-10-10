@@ -44,8 +44,8 @@ module.exports = {
       const result = compareSync(body.password, results.password);
       if (result) {
         results.password = undefined;
-        const jsontoken = sign({ result: results }, "qwe1234", {
-          expiresIn: "48h",
+        const jsontoken = sign({ result: results }, "doncalamar30", {
+          expiresIn: "24h",
         });
         return res.json({
           results: results,
@@ -91,7 +91,6 @@ module.exports = {
   updateUsers: (req, res) => {
     const body = req.body;
     const id = req.params.id;
-    console.log(body);
     const salt = genSaltSync(10);
     if (req.body.password === "") {
       updateUserWithoutPassword(id, body, (err, results) => {

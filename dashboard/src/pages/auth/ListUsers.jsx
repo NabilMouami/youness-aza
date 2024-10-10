@@ -2,16 +2,18 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import axios from "axios";
+import { config_url } from "../../config";
+
 import { RiChatDeleteFill, RiEdit2Line } from "react-icons/ri";
 import { DataGrid } from "@mui/x-data-grid";
 import { detailsProduct } from "../../slices/detailsProduct";
 import { useDispatch } from "react-redux";
-import { config_url } from "../../config";
+
 import Box from "@mui/material/Box";
 
 function ListUsers() {
   const [listUsers, setListUsers] = useState([]);
-
+  console.log(listUsers);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -27,7 +29,7 @@ function ListUsers() {
     navigate("/app/changer-user/" + dts.id);
   };
   const deleteEmployee = (id) => {
-    axios.delete(`${config_url}/api/users/${id}`, {}).then(() => {
+    axios.delete(`${config_url}/api/users/${id}`).then(() => {
       setListUsers(listUsers.filter((row) => row.id !== id));
     });
   };
@@ -50,28 +52,25 @@ function ListUsers() {
   }
   const columns = [
     {
-      field: "nom",
-      headerName: "Nom:",
+      field: "lastName",
+      headerName: "Lastname:",
       headerClassName: "super-app-theme--cell",
 
       width: 140,
-      editable: true,
     },
     {
-      field: "prenom",
-      headerName: "Prenom:",
+      field: "firstName",
+      headerName: "Firstname:",
       headerClassName: "super-app-theme--cell",
 
       width: 140,
-      editable: true,
     },
     {
       field: "email",
       headerName: "Email:",
       headerClassName: "super-app-theme--cell",
 
-      width: 240,
-      editable: true,
+      width: 400,
     },
     {
       field: "role",
@@ -99,7 +98,11 @@ function ListUsers() {
                 <RiChatDeleteFill
                   className="collabListDelete"
                   onClick={() => {
-                    popup(params.row.id, params.row.nom, params.row.prenom);
+                    popup(
+                      params.row.id,
+                      params.row.firstName,
+                      params.row.lastName
+                    );
                   }}
                 />
               </div>
@@ -114,7 +117,7 @@ function ListUsers() {
     <div className="collabList">
       <Link to="/app/ajoute-utilisateur">
         <button className="addnewCollab">
-          <span className="text-xl mr-5">+</span>Ajouter un Utilisateur
+          <span className="text-xl mr-5">+</span>Add User
         </button>
       </Link>
       <Box
@@ -134,7 +137,6 @@ function ListUsers() {
           columns={columns}
           getRowId={(row) => row.id}
           disableSelectionOnClick
-          experimentalFeatures={{ newEditingApi: true }}
         />
       </Box>
     </div>

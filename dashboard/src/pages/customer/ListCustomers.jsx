@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import axios from "axios";
-import { RiChatDeleteFill, RiEdit2Line } from "react-icons/ri";
+import { RiEye2Fill, RiChatDeleteFill, RiEdit2Line } from "react-icons/ri";
 import { DataGrid } from "@mui/x-data-grid";
 import { detailsProduct } from "../../slices/detailsProduct";
 import { useDispatch } from "react-redux";
@@ -25,6 +25,12 @@ function ListCustomers() {
     dispatch(detailsProduct(dts));
 
     navigate("/app/clients/orders/" + dts.id);
+  };
+
+  const detailsCustomer = (dts) => {
+    dispatch(detailsProduct(dts));
+
+    navigate("/app/clients/changer-infos-client/" + dts.id);
   };
   const deleteEmployee = (id) => {
     axios.delete(`${config_url}/api/users/${id}`, {}).then(() => {
@@ -92,8 +98,18 @@ function ListCustomers() {
                 <RiChatDeleteFill
                   className="collabListDelete"
                   onClick={() => {
-                    popup(params.row.id, params.row.nom, params.row.prenom);
+                    popup(
+                      params.row.id,
+                      params.row.firstName,
+                      params.row.lastName
+                    );
                   }}
+                />
+              </div>
+              <div>
+                <RiEye2Fill
+                  className="collabListDelete"
+                  onClick={() => detailsCustomer(params.row)}
                 />
               </div>
             </div>
