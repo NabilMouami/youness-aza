@@ -27,7 +27,6 @@ function AddProduit() {
   const [category, setCategory] = useState("");
   const [status, setSelectStatus] = useState("old");
   const [qty, setQty] = useState(0);
-  const [quantity, setQuantity] = useState("");
   const [nom, setNom] = useState("");
   const [productSlug, setProductSlug] = useState("");
 

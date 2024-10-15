@@ -388,8 +388,8 @@ function UpdProduit() {
           <div className="bg-gray-300 rounded-2xl">
             <h1>Collections</h1>
             <div className="flex items-center justify-center gap-4  p-20">
-              <div className="flex flex-wrap">
-                <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap mt-10">
+                <div className="flex flex-col gap-4 mt-10">
                   <Button
                     onClick={() => setShowSelectCategories(true)}
                     variant="contained"
