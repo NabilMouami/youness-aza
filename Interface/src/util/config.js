@@ -1,1 +1,1 @@
-export const config_url = `http://localhost:5000`;
+export const config_url = `http://188.166.54.230/backend`;
