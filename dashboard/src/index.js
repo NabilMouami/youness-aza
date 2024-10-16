@@ -15,7 +15,7 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <BrowserRouter>
+  <BrowserRouter basename="/dashboard">
     <ToastContainer autoClose={3000} position={"top-center"} />
 
     <NextUIProvider>
