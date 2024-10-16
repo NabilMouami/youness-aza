@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import custom_axios from "../axios/AxiosSetup";
 import { getLoginInfo } from "../utils/LoginInfo";
 // Icons
 import {
@@ -14,6 +13,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import "./users.css";
 import { detailsUser } from "../slices/userInfo";
+import { config_url } from "../config";
 const Login = () => {
   let navigate = useNavigate();
   const dispatch = useDispatch();
@@ -29,7 +29,7 @@ const Login = () => {
       toast.info("Please fill the information");
       return;
     }
-    const response = await axios.post("http://localhost:5000/api/users/login", {
+    const response = await axios.post(`${config_url}/api/users/login`, {
       email: email.current.value,
       password: password.current.value,
     });
