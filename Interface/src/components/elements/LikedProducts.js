@@ -1,12 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-
 import { useSelector } from "react-redux";
 import Link from "next/link";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import Image from "next/image";
-
 import { Swiper, SwiperSlide } from "swiper/react";
+
 const swiperOptions = {
   modules: [Autoplay, Pagination, Navigation],
   slidesPerView: 5,
@@ -46,9 +45,9 @@ export default function LikedProducts({ handleLinkClick }) {
   const [selectedSize, setSelectedSize] = useState(null);
 
   useEffect(() => {
-    if (productList?.length > 0) {
+    if (Array.isArray(productList) && productList.length > 0) {
       const shuffledProducts = [...productList].sort(() => 0.5 - Math.random()); // shuffle the array
-      setProductsLiked(shuffledProducts.slice(0, 12)); // pick the first 4 items
+      setProductsLiked(shuffledProducts.slice(0, 12)); // pick the first 12 items
     }
   }, [productList]);
 
@@ -67,9 +66,9 @@ export default function LikedProducts({ handleLinkClick }) {
         onClick={() => !isBlocked && handleSelectedSize(size)} // Disable click if blocked
         className={`btn btn-sm ${
           isBlocked
-            ? "btn-outline-secondary" // Default outline for blocked items
+            ? "btn-outline-secondary"
             : selectedSize === size || (selectedSize === null && index === 0)
-            ? "btn-dark text-white" // Highlight the selected size or default to the first available
+            ? "btn-dark text-white"
             : "btn-outline-secondary"
         }`}
         style={{
@@ -95,102 +94,97 @@ export default function LikedProducts({ handleLinkClick }) {
   };
 
   return (
-    <>
-      <div className="related-product-area pt-65 pb-50 related-product-border">
-        <div className="container">
-          <div className="row align-items-center">
-            <div className="col-sm-6">
-              <div className="tpsection mb-40">
-                <h4 className="tpsection__title">
-                  Vous pourriez aussi aimer ceci
-                </h4>
-              </div>
+    <div className="related-product-area pt-65 pb-50 related-product-border">
+      <div className="container">
+        <div className="row align-items-center">
+          <div className="col-sm-6">
+            <div className="tpsection mb-40">
+              <h4 className="tpsection__title">
+                Vous pourriez aussi aimer ceci
+              </h4>
             </div>
-            <div className="col-sm-6">
-              <div className="tprelated__arrow d-flex align-items-center justify-content-end mb-40">
-                <div className="tprelated__prv">
-                  <i className="far fa-long-arrow-left" />
-                </div>
-                <div className="tprelated__nxt">
-                  <i className="far fa-long-arrow-right" />
-                </div>
+          </div>
+          <div className="col-sm-6">
+            <div className="tprelated__arrow d-flex align-items-center justify-content-end mb-40">
+              <div className="tprelated__prv">
+                <i className="far fa-long-arrow-left" />
+              </div>
+              <div className="tprelated__nxt">
+                <i className="far fa-long-arrow-right" />
               </div>
             </div>
           </div>
-          <div className="swiper-container related-product-active">
-            <Swiper {...swiperOptions}>
-              {productsLiked?.map((item) => {
-                const images = JSON.parse(item.images); // Parse the images string into an array
-                const secondImage = images[0];
-                const myArray = JSON.parse(item.nemuro_shoes);
-                const myQuantities = JSON.parse(item.qty); // Quantities array
+        </div>
+        <div className="swiper-container related-product-active">
+          <Swiper {...swiperOptions}>
+            {productsLiked?.map((item) => {
+              // Ensure the item images and data are not null
+              const images = item.images ? JSON.parse(item.images) : [];
+              const secondImage = images[0] || "";
+              const myArray = item.nemuro_shoes
+                ? JSON.parse(item.nemuro_shoes)
+                : [];
+              const myQuantities = item.qty ? JSON.parse(item.qty) : [];
 
-                return (
-                  <SwiperSlide key={item.id}>
-                    <div className="tpproduct pb-5">
-                      <div className="tpproduct__thumb p-relative">
-                        <Link
-                          href={`/produits/${item.name_by_filtered}`}
-                          onClick={(e) => handleLinkClick(e, item)}
-                        >
-                          <Image
-                            width={250}
-                            height={250}
-                            className="product-thumb-secondary"
-                            src={secondImage}
-                            alt="product-thumb-secondary"
-                          />
-                          <Image
-                            width={250}
-                            height={250}
-                            src={item.image}
-                            alt="product-thumb"
-                          />
-                        </Link>
-
-                        <div className="tpproduct__content">
-                          <h3 className="tpproduct__title mt-20">
-                            <Link
-                              href={`/produits/${item.name_by_filtered}`}
-                              onClick={(e) => handleLinkClick(e, item)}
-                            >
-                              {item.name}
-                            </Link>
-                          </h3>
-                          <div className="tpproduct__priceinfo p-relative">
-                            <div className="tpproduct__priceinfo-list">
-                              {item.price_promo === 0 ? (
-                                ""
-                              ) : (
-                                <span>{item.price_promo}.00Dh</span>
-                              )}
-                              {item.price_promo === 0 ? (
-                                <span>{item.price}Dh</span>
-                              ) : (
-                                <del className="ml-10">{item.price}.00Dh</del>
-                              )}
-                            </div>
-
-                            <div className="mb-2 p-2 d-flex flex-column gap-2 me-2">
-                              <div className="row row-cols-4 row-cols-md-4 row-cols-lg-4 g-2">
-                                {renderButtons(
-                                  myArray,
-                                  myQuantities,
-                                  item.type
-                                )}
-                              </div>
+              return (
+                <SwiperSlide key={item.id}>
+                  <div className="tpproduct pb-5">
+                    <div className="tpproduct__thumb p-relative">
+                      <Link
+                        href={`/produits/${item.name_by_filtered}`}
+                        onClick={(e) => handleLinkClick(e, item)}
+                      >
+                        <Image
+                          width={250}
+                          height={250}
+                          className="product-thumb-secondary"
+                          src={secondImage || "/default-image.jpg"} // Fallback to a default image
+                          alt="product-thumb-secondary"
+                        />
+                        <Image
+                          width={250}
+                          height={250}
+                          src={item.image || "/default-image.jpg"} // Fallback to a default image
+                          alt="product-thumb"
+                        />
+                      </Link>
+                      <div className="tpproduct__content">
+                        <h3 className="tpproduct__title mt-20">
+                          <Link
+                            href={`/produits/${item.name_by_filtered}`}
+                            onClick={(e) => handleLinkClick(e, item)}
+                          >
+                            {item.name}
+                          </Link>
+                        </h3>
+                        <div className="tpproduct__priceinfo p-relative">
+                          <div className="tpproduct__priceinfo-list">
+                            {item.price_promo === 0 ? (
+                              ""
+                            ) : (
+                              <span>{item.price_promo}.00Dh</span>
+                            )}
+                            {item.price_promo === 0 ? (
+                              <span>{item.price}Dh</span>
+                            ) : (
+                              <del className="ml-10">{item.price}.00Dh</del>
+                            )}
+                          </div>
+                          <div className="mb-2 p-2 d-flex flex-column gap-2 me-2">
+                            <div className="row row-cols-4 row-cols-md-4 row-cols-lg-4 g-2">
+                              {renderButtons(myArray, myQuantities, item.type)}
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </SwiperSlide>
-                );
-              })}
-            </Swiper>
-          </div>
+                  </div>
+                </SwiperSlide>
+              );
+            })}
+          </Swiper>
         </div>
       </div>
-    </>
+    </div>
   );
 }

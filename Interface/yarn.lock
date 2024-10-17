@@ -1096,10 +1096,10 @@ react-is@^18.2.0, react-is@^18.3.1:
   resolved "https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz"
   integrity sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==
 
-react-medium-image-zoom@^5.2.8:
-  version "5.2.8"
-  resolved "https://registry.npmjs.org/react-medium-image-zoom/-/react-medium-image-zoom-5.2.8.tgz"
-  integrity sha512-ivnubZi/2GQcMTneQy5gjLxEQLenKu081844qqZ7/JvLxSh5YPF1TLq7s+5rc54dKa0jjPT8Zm2tiC0Sda6eIA==
+react-medium-image-zoom@^5.2.10:
+  version "5.2.10"
+  resolved "https://registry.npmjs.org/react-medium-image-zoom/-/react-medium-image-zoom-5.2.10.tgz"
+  integrity sha512-JBYf4u0zsocezIDtrjwStD+8sX+c8XuLsdz+HxPbojRj0sCicua0XOQKysuPetoFyX+YgStfj+vEtZ+699O/pg==
 
 react-modal-video@^2.0.1:
   version "2.0.1"

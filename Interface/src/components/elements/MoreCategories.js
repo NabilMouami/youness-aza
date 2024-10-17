@@ -4,8 +4,8 @@ import { useSelector } from "react-redux";
 import Link from "next/link";
 import { Autoplay, Navigation, Pagination } from "swiper/modules";
 import Image from "next/image";
-
 import { Swiper, SwiperSlide } from "swiper/react";
+
 const swiperOptions = {
   modules: [Autoplay, Pagination, Navigation],
   slidesPerView: 5,
@@ -47,19 +47,22 @@ export default function MoreCategories({
   handleLinkClick,
 }) {
   const { productList } = useSelector((state) => state.Products) || {};
-  const [productsLiked, setProductsLiked] = useState([]);
   const [selectedSize, setSelectedSize] = useState(null);
+  const [productsLiked, setProductsLiked] = useState([]); // Added state for liked products
 
   useEffect(() => {
     if (productList?.length > 0) {
-      const shuffledProducts = [...productList].sort(() => 0.5 - Math.random()); // shuffle the array
-      setProductsLiked(shuffledProducts.slice(0, 12)); // pick the first 4 items
+      const shuffledProducts = [...productList]?.sort(
+        () => 0.5 - Math.random()
+      ); // shuffle the array
+      setProductsLiked(shuffledProducts?.slice(0, 12)); // pick the first 12 items
     }
   }, [productList]);
 
   const handleSelectedSize = (size) => {
     setSelectedSize(size);
   };
+
   const createButton = (size, index, qty, type) => {
     if (type === 1) return null; // Skip button rendering if type is 1
 
@@ -122,10 +125,27 @@ export default function MoreCategories({
           <div className="swiper-container related-product-active">
             <Swiper {...swiperOptions}>
               {productSimilaire?.map((item) => {
-                const images = JSON.parse(item.images); // Parse the images string into an array
-                const secondImage = images[0];
-                const myArray = JSON.parse(item.nemuro_shoes);
-                const myQuantities = JSON.parse(item.qty); // Quantities array
+                // Safely parse images, and use fallback in case of errors
+                let images = [];
+                try {
+                  images = JSON.parse(item?.images);
+                } catch (e) {
+                  console.error("Failed to parse images:", e);
+                  images = []; // Fallback to an empty array if parsing fails
+                }
+
+                const secondImage = images[0] || "/fallback-image.jpg"; // Default to fallback if no second image
+
+                // Safely parse qty data
+                let myQuantities = [];
+                try {
+                  myQuantities = JSON.parse(item?.qty) || [];
+                } catch (e) {
+                  console.error("Failed to parse quantities:", e);
+                  myQuantities = []; // Fallback to an empty array if parsing fails
+                }
+
+                const myArray = JSON.parse(item?.nemuro_shoes) || []; // Parse or default to empty array
 
                 return (
                   <SwiperSlide key={item.id}>
@@ -145,7 +165,7 @@ export default function MoreCategories({
                           <Image
                             width={250}
                             height={250}
-                            src={item.image}
+                            src={item.image || "/fallback-image.jpg"} // Fallback if no image
                             alt="product-thumb"
                           />
                         </Link>

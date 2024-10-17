@@ -16,11 +16,10 @@ import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import Link from "next/link";
 import { toast } from "react-toastify";
 
+import ReactImageGallery from "react-image-gallery";
 import "react-image-gallery/styles/css/image-gallery.css";
-const ReactImageGallery = dynamic(() => import("react-image-gallery"), {
-  ssr: false,
-});
-const Zoom = dynamic(() => import("react-medium-image-zoom"), { ssr: false });
+
+import Zoom from "react-medium-image-zoom";
 import "react-medium-image-zoom/dist/styles.css";
 import "react-image-gallery/styles/css/image-gallery.css";
 import { config_url } from "@/util/config";
@@ -56,7 +55,7 @@ function DetailsProduct({ initialData, nameByFiltered }) {
     if (product.id) {
       console.log("Fetching product group for product id:", product.id);
       axios
-        .get(`${config_url}/api/product_group/${product.id}`)
+        .get(`${config_url}/api/product_group/${product?.id}`)
         .then((res) => {
           console.log("Product Group Data:", res.data);
           setListProdsGroup(res.data);
@@ -70,14 +69,14 @@ function DetailsProduct({ initialData, nameByFiltered }) {
   useEffect(() => {
     console.log("Details changed:", Details);
     if (Details?.category) {
-      console.log("Setting category:", Details.category);
-      setCategory(Details.category); // Update category when Details.category changes
+      console.log("Setting category:", Details?.category);
+      setCategory(Details?.category); // Update category when Details.category changes
     }
   }, [Details]);
 
   useEffect(() => {
     if (category && productList?.length > 0) {
-      const filtered = productList.filter(
+      const filtered = productList?.filter(
         (product) => product.category === category
       );
       setProductSimilaire(filtered);
@@ -103,8 +102,8 @@ function DetailsProduct({ initialData, nameByFiltered }) {
   let myArray = [];
   if (Details?.nemuro_shoes) {
     try {
-      myArray = JSON.parse(Details.nemuro_shoes);
-      myQuantities = JSON.parse(Details.qty);
+      myArray = JSON.parse(Details?.nemuro_shoes);
+      myQuantities = JSON.parse(Details?.qty);
     } catch (error) {
       console.error("Failed to parse nemuro_shoes JSON:", error);
     }
@@ -115,10 +114,10 @@ function DetailsProduct({ initialData, nameByFiltered }) {
   const addToCart = (id, size) => {
     let size_final;
 
-    if (size === null || myQuantities[myArray.indexOf(size)] === "0") {
+    if (size === null || myQuantities[myArray?.indexOf(size)] === "0") {
       // Find the first available size with quantity greater than 0
       size_final =
-        myArray.find((s) => myQuantities[myArray.indexOf(s)] !== "0") || null; // Fallback to null if no size is available
+        myArray.find((s) => myQuantities[myArray?.indexOf(s)] !== "0") || null; // Fallback to null if no size is available
 
       if (!size_final) {
         // Notify when no sizes are available
@@ -156,11 +155,13 @@ function DetailsProduct({ initialData, nameByFiltered }) {
     dispatch(addWishlistWithSize({ product: itemwithsize }));
   };
 
-  const imagesArray = Details?.images ? JSON.parse(Details.images) : [];
-  const validImages = [Details?.image, ...imagesArray].filter((image) => image);
+  const imagesArray = Details?.images ? JSON.parse(Details?.images) : [];
+  const validImages = [Details?.image, ...imagesArray]?.filter(
+    (image) => image
+  );
 
   const productDetailItem = {
-    images: validImages.map((image) => ({
+    images: validImages?.map((image) => ({
       original: `${image}`,
       thumbnail: `${image}`,
     })),
@@ -205,7 +206,7 @@ function DetailsProduct({ initialData, nameByFiltered }) {
     if (type === 1) return null;
 
     const isBlocked = qty === "0"; // Check if quantity is 0
-    const nextAvailableIndex = myArray.findIndex(
+    const nextAvailableIndex = myArray?.findIndex(
       (s, i) => myQuantities[i] !== "0"
     ); // Find the first available size index
 
@@ -238,7 +239,7 @@ function DetailsProduct({ initialData, nameByFiltered }) {
   };
 
   const renderButtons = (sizes, qtys, type) => {
-    return sizes.map((size, index) =>
+    return sizes?.map((size, index) =>
       createButton(size, index, qtys[index], type)
     );
   };
@@ -335,7 +336,7 @@ function DetailsProduct({ initialData, nameByFiltered }) {
                         </span>
                       )}
                     </div>
-                    {listProdsGroup && listProdsGroup.length > 0 && (
+                    {listProdsGroup && listProdsGroup?.length > 0 && (
                       <h3>produits connexes:</h3>
                     )}
 

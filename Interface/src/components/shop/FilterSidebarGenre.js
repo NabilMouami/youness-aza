@@ -15,7 +15,7 @@ const FilterSidebarGenre = ({ onFilterChange, data }) => {
 
   const [showMoreSizes, setShowMoreSizes] = useState(false);
   const [isSizeDropdownOpen, setIsSizeDropdownOpen] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [isLoading, setIsLoading] = useState(true); // Loading state
 
   // Collect all sizes and their count (occurrence in products)
@@ -55,9 +55,9 @@ const FilterSidebarGenre = ({ onFilterChange, data }) => {
     memoFilterChange({ category: contract, sizes, price, genre });
   }, [genre, contract, sizes, price, memoFilterChange]);
 
-  useEffect(() => {
-    setShowFilters(!showFilters);
-  }, [genre, contract, sizes]);
+  // useEffect(() => {
+  //   setShowFilters(!showFilters);
+  // }, [genre, contract, sizes]);
 
   const handlePriceChange = (value) => {
     setPrice(value); // Update price state in parent
