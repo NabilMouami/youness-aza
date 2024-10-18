@@ -1,1 +1,1 @@
-export const config_url = `http://209.38.41.8/backend/`;
+export const config_url = `http://164.90.194.211/backend/`;
